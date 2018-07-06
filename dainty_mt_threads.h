@@ -69,8 +69,6 @@ namespace mt
     t_detachedthread& operator=(const t_detachedthread&) = delete;
     t_detachedthread& operator=(t_detachedthread&&)      = delete;
 
-    operator t_validity() const noexcept;
-
   private:
     os::threading::t_pthread thread_;
   };

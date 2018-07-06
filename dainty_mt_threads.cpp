@@ -120,23 +120,21 @@ namespace mt
                                      p_cstr  name,
                                      p_logic logic,
                                      t_bool  del_logic) noexcept {
-    t_detachedthread_data_ data{err, name, logic, del_logic};
-    if (get(name) && logic && data.cond_ == VALID && data.lock_ == VALID) {
-      pthread_attr_t attr;
-      if ((!::pthread_attr_init(&attr)) &&
-          (!::pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED)) &&
-          (logic->update (err, attr)                         == VALID) &&
-          (thread_.create(err, detachedthread_start_, &data) == VALID)) {
-        <% auto scope = data.lock_.make_locked_scope(err);
-           while (!err && !data.ready_)
-             data.cond_.wait(err, data.lock_);
-        %>
+    T_ERR_GUARD(err) {
+      t_detachedthread_data_ data{err, name, logic, del_logic};
+      if (get(name) && logic && data.cond_ == VALID && data.lock_ == VALID) {
+        pthread_attr_t attr;
+        if ((!::pthread_attr_init(&attr)) &&
+            (!::pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED)) &&
+            (logic->update (err, attr)                         == VALID) &&
+            (thread_.create(err, detachedthread_start_, &data) == VALID)) {
+          <% auto scope = data.lock_.make_locked_scope(err);
+             while (!err && !data.ready_)
+               data.cond_.wait(err, data.lock_);
+          %>
+        }
       }
     }
-  }
-
-  t_detachedthread::operator t_validity() const noexcept {
-    return thread_;
   }
 
 ///////////////////////////////////////////////////////////////////////////////
