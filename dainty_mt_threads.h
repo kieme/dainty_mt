@@ -27,11 +27,6 @@
 #ifndef _DAINTY_MT_THREADS_H_
 #define _DAINTY_MT_THREADS_H_
 
-// description
-// os: operating system functionality used by dainty
-//
-//  not a complete API but only the things used by dainty.
-
 #include "dainty_named.h"
 #include "dainty_oops.h"
 #include "dainty_os_threading.h"
@@ -44,11 +39,45 @@ namespace mt
 namespace threads
 {
   using named::t_void;
+  using named::p_void;
   using named::t_bool;
   using named::p_cstr;
   using named::t_validity;
   using named::VALID;
   using named::INVALID;
+
+///////////////////////////////////////////////////////////////////////////////
+
+  class t_thread {
+  public:
+    class t_logic {
+    public:
+      virtual ~t_logic() { }
+      virtual t_validity update (t_err, ::pthread_attr_t&) noexcept;
+      virtual t_validity prepare(t_err)                    noexcept;
+      virtual p_void     run    ()                         noexcept = 0;
+    };
+
+    using p_logic = t_logic*;
+
+    t_thread(t_err, p_cstr name, p_logic, t_bool del_logic) noexcept;
+
+    t_thread(const t_thread&)            = delete;
+    t_thread(t_thread&&)                 = delete;
+    t_thread& operator=(const t_thread&) = delete;
+    t_thread& operator=(t_thread&&)      = delete;
+
+    operator t_validity() const noexcept;
+
+    t_validity join()      noexcept;
+    t_validity join(t_err) noexcept;
+
+    t_validity join(       p_void&) noexcept;
+    t_validity join(t_err, p_void&) noexcept;
+
+  private:
+    os::threading::t_pthread thread_;
+  };
 
 ///////////////////////////////////////////////////////////////////////////////
 
