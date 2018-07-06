@@ -37,6 +37,8 @@ namespace dainty
 {
 namespace mt
 {
+namespace threads
+{
   using namespace dainty::os;
   using namespace dainty::os::threading;
 
@@ -138,6 +140,7 @@ namespace mt
   }
 
 ///////////////////////////////////////////////////////////////////////////////
+}
 }
 }
 

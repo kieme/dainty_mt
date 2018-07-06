@@ -41,6 +41,8 @@ namespace dainty
 {
 namespace mt
 {
+namespace threads
+{
   using named::t_void;
   using named::t_bool;
   using named::p_cstr;
@@ -74,7 +76,7 @@ namespace mt
   };
 
 ///////////////////////////////////////////////////////////////////////////////
-
+}
 }
 }
 
