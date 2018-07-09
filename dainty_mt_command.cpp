@@ -41,6 +41,8 @@ namespace command
 
   class t_processor_impl_ {
   public:
+    using t_logic = t_processor::t_logic;
+
     t_processor_impl_(t_err err)
       : cmdlock_(err), condlock_(err), cond_(err), eventfd_(err, t_n{0}) {
     }
@@ -50,7 +52,7 @@ namespace command
               eventfd_ == VALID) ?  VALID : INVALID;
     }
 
-    t_validity process(t_err err, t_callback& callback, t_n max) {
+    t_validity process(t_err err, t_logic& logic, t_n max) {
       T_ERR_GUARD(err) {
         for (t_n_ n = get(max); !err && n; --n) {
           t_eventfd::t_value value = 0;
@@ -61,10 +63,10 @@ namespace command
                 if (async_) {
                   cmd_ = nullptr;
                   cond_.signal(err);
-                  callback.async_process(cmd);
+                  logic.async_process(cmd);
                 } else {
                   if (wait_) {
-                    callback.process(err, *cmd);
+                    logic.process(err, *cmd);
                     cond_.signal(); // err?
                   }
                   cmd_ = nullptr;
@@ -188,10 +190,10 @@ namespace command
     return {};
   }
 
-  t_validity t_processor::process(t_err err, t_callback& callback, t_n max) {
+  t_validity t_processor::process(t_err err, t_logic& logic, t_n max) {
     T_ERR_GUARD(err) {
       if (impl_)
-        return impl_->process(err, callback, max);
+        return impl_->process(err, logic, max);
       err = E_XXX;
     }
     return INVALID;

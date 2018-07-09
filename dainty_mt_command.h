@@ -87,17 +87,17 @@ namespace command
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  class t_callback {
-  public:
-    virtual ~t_callback() { }
-    virtual t_void       process(t_err, t_command&) = 0;
-    virtual t_void async_process(       t_command*) = 0;
-  };
-
-///////////////////////////////////////////////////////////////////////////////
-
   class t_processor {
   public:
+    class t_logic {
+    public:
+      virtual ~t_logic() { }
+      virtual t_void       process(t_err, t_command&) = 0;
+      virtual t_void async_process(       t_command*) = 0;
+    };
+
+    using r_logic = t_logic&;
+
      t_processor(t_err);
      t_processor(t_processor&&);
     ~t_processor();
@@ -110,7 +110,7 @@ namespace command
 
     t_fd get_fd() const;
 
-    t_validity process(t_err, t_callback&, t_n max = t_n{1});
+    t_validity process(t_err, r_logic, t_n max = t_n{1});
 
     t_client make_client(); // const char* - literal - XXX
 
@@ -130,6 +130,7 @@ namespace command
   }
 
 ///////////////////////////////////////////////////////////////////////////////
+
   inline
   t_processor::t_processor(t_processor&& processor) : impl_(processor.impl_) {
     processor.impl_ = nullptr;
