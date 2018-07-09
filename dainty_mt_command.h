@@ -24,8 +24,8 @@
 
 ******************************************************************************/
 
-#ifndef _DAINTY_MT_THREADS_H_
-#define _DAINTY_MT_THREADS_H_
+#ifndef _DAINTY_MT_COMMAND_H_
+#define _DAINTY_MT_COMMAND_H_
 
 #include "dainty_named.h"
 #include "dainty_oops.h"
@@ -54,7 +54,7 @@ namespace command
 
   class t_command {
   public:
-    t_command(t_id _id) : id(_id) { }
+    t_command(t_id _id) noexcept : id(_id) { }
     virtual ~t_command() { }
 
     const t_id id;
@@ -66,21 +66,21 @@ namespace command
 
   class t_client {
   public:
-    t_client(t_client&& client);
+    t_client(t_client&& client) noexcept;
 
     t_client& operator=(const t_client&) = delete;
     t_client& operator=(t_client&&)      = delete;
 
-    operator t_validity() const;
+    operator t_validity() const noexcept;
 
-    t_validity       request(t_err, t_command&);
-    t_validity async_request(t_err, t_command*);
+    t_validity       request(t_err, t_command&) noexcept;
+    t_validity async_request(t_err, t_command*) noexcept;
 
   private:
     friend class t_processor;
     friend class t_processor_impl_;
     t_client() = default;
-    t_client(t_processor_impl_* impl) : impl_(impl) { }
+    t_client(t_processor_impl_* impl) noexcept : impl_(impl) { }
 
     t_processor_impl_* impl_ = nullptr;
   };
@@ -91,28 +91,33 @@ namespace command
   public:
     class t_logic {
     public:
+      using t_err     = oops::t_oops<>;
+      using t_command = command::t_command;
+      using p_command = t_command*;
+      using r_command = t_command&;
+
       virtual ~t_logic() { }
-      virtual t_void       process(t_err, t_command&) = 0;
-      virtual t_void async_process(       t_command*) = 0;
+      virtual t_void       process(t_err, r_command) noexcept = 0;
+      virtual t_void async_process(       p_command) noexcept = 0;
     };
 
     using r_logic = t_logic&;
 
-     t_processor(t_err);
-     t_processor(t_processor&&);
+     t_processor(t_err)         noexcept;
+     t_processor(t_processor&&) noexcept;
     ~t_processor();
 
     t_processor(const t_processor&)            = delete;
     t_processor& operator=(t_processor&&)      = delete;
     t_processor& operator=(const t_processor&) = delete;
 
-    operator t_validity () const;
+    operator t_validity () const noexcept;
 
-    t_fd get_fd() const;
+    t_fd get_fd() const noexcept;
 
-    t_validity process(t_err, r_logic, t_n max = t_n{1});
+    t_validity process(t_err, r_logic, t_n max = t_n{1}) noexcept;
 
-    t_client make_client(); // const char* - literal - XXX
+    t_client make_client() noexcept; // const char* - literal - XXX
 
   private:
     t_processor_impl_* impl_ = nullptr;
@@ -121,22 +126,25 @@ namespace command
 ///////////////////////////////////////////////////////////////////////////////
 
   inline
-  t_client::t_client(t_client&& client) : impl_(client.impl_) {
+  t_client::t_client(t_client&& client) noexcept : impl_(client.impl_) {
     client.impl_ = nullptr;
   }
 
-  inline t_client::operator t_validity() const {
+  inline
+  t_client::operator t_validity() const noexcept {
     return impl_ ? VALID : INVALID;
   }
 
 ///////////////////////////////////////////////////////////////////////////////
 
   inline
-  t_processor::t_processor(t_processor&& processor) : impl_(processor.impl_) {
+  t_processor::t_processor(t_processor&& processor) noexcept
+      : impl_(processor.impl_) {
     processor.impl_ = nullptr;
   }
 
-  inline t_processor::operator t_validity() const {
+  inline
+  t_processor::operator t_validity() const noexcept {
     return impl_ ? VALID : INVALID;
   }
 

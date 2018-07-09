@@ -43,16 +43,16 @@ namespace command
   public:
     using t_logic = t_processor::t_logic;
 
-    t_processor_impl_(t_err err)
+    t_processor_impl_(t_err err) noexcept
       : cmdlock_(err), condlock_(err), cond_(err), eventfd_(err, t_n{0}) {
     }
 
-    operator t_validity() const {
+    operator t_validity() const noexcept {
       return (cmdlock_ == VALID && condlock_ == VALID && cond_ == VALID &&
               eventfd_ == VALID) ?  VALID : INVALID;
     }
 
-    t_validity process(t_err err, t_logic& logic, t_n max) {
+    t_validity process(t_err err, t_logic& logic, t_n max) noexcept {
       T_ERR_GUARD(err) {
         for (t_n_ n = get(max); !err && n; --n) {
           t_eventfd::t_value value = 0;
@@ -79,7 +79,7 @@ namespace command
       return INVALID;
     }
 
-    t_validity request(t_err& err, t_command& cmd) {
+    t_validity request(t_err& err, t_command& cmd) noexcept {
       T_ERR_GUARD(err) {
         <% auto scope = cmdlock_.make_locked_scope(err);
           if (scope == VALID) {
@@ -102,7 +102,7 @@ namespace command
       return INVALID;
     }
 
-    t_validity async_request(t_err& err, t_command* cmd) {
+    t_validity async_request(t_err& err, t_command* cmd) noexcept {
       T_ERR_GUARD(err) {
         <% auto scope = cmdlock_.make_locked_scope(err);
           if (scope == VALID) {
@@ -123,11 +123,11 @@ namespace command
       return INVALID;
     }
 
-    t_fd get_fd() const {
+    t_fd get_fd() const noexcept {
       return eventfd_.get_fd();
     }
 
-    t_client make_client() {
+    t_client make_client() noexcept {
       return {this}; // NOTE: future, we have information on clients.
     }
 
@@ -143,8 +143,7 @@ namespace command
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  inline
-  t_validity t_client::request(t_err err, t_command& cmd) {
+  t_validity t_client::request(t_err err, t_command& cmd) noexcept {
     T_ERR_GUARD(err) {
       if (impl_)
         return impl_->request(err, cmd);
@@ -153,8 +152,7 @@ namespace command
     return INVALID;
   }
 
-  inline
-  t_validity t_client::async_request(t_err err, t_command* cmd) {
+  t_validity t_client::async_request(t_err err, t_command* cmd) noexcept {
     T_ERR_GUARD(err) {
       if (impl_)
         return impl_->async_request(err, cmd);
@@ -165,7 +163,7 @@ namespace command
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  t_processor::t_processor(t_err err) {
+  t_processor::t_processor(t_err err) noexcept {
     T_ERR_GUARD(err) {
       impl_ = new t_processor_impl_(err);
       if (impl_) {
@@ -184,13 +182,14 @@ namespace command
     }
   }
 
-  t_client t_processor::make_client() {
+  t_client t_processor::make_client() noexcept {
     if (impl_)
       return impl_->make_client();
     return {};
   }
 
-  t_validity t_processor::process(t_err err, t_logic& logic, t_n max) {
+  t_validity t_processor::process(t_err err, t_logic& logic,
+                                  t_n max) noexcept {
     T_ERR_GUARD(err) {
       if (impl_)
         return impl_->process(err, logic, max);
@@ -200,7 +199,7 @@ namespace command
   }
 
   inline
-  t_fd t_processor::get_fd() const {
+  t_fd t_processor::get_fd() const noexcept {
     if (impl_)
       return impl_->get_fd();
     return BAD_FD;
