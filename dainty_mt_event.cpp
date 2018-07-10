@@ -25,13 +25,13 @@
 ******************************************************************************/
 
 #include "dainty_os_threading.h"
-#include "dainty_mt_command.h"
+#include "dainty_mt_event.h"
 
 namespace dainty
 {
 namespace mt
 {
-namespace command
+namespace event
 {
   using namespace dainty::os;
   using namespace dainty::os::threading;
@@ -43,82 +43,27 @@ namespace command
   public:
     using t_logic = t_processor::t_logic;
 
-    t_processor_impl_(t_err err) noexcept
-      : cmdlock_(err), condlock_(err), cond_(err), eventfd_(err, t_n{0}) {
+    t_processor_impl_(t_err err) noexcept : eventfd_(err, t_n{0}) {
     }
 
     operator t_validity() const noexcept {
-      return (cmdlock_ == VALID && condlock_ == VALID && cond_ == VALID &&
-              eventfd_ == VALID) ?  VALID : INVALID;
+      return (eventfd_ == VALID) ?  VALID : INVALID;
     }
 
     t_validity process(t_err err, t_logic& logic, t_n max) noexcept {
       T_ERR_GUARD(err) {
         for (t_n_ n = get(max); !err && n; --n) {
-          t_eventfd::t_value value = 0;
-          if (eventfd_.read(err, value) == VALID) {
-            <% auto scope = condlock_.make_locked_scope(err);
-              if (scope == VALID) {
-                t_command* cmd = cmd_;
-                if (async_) {
-                  cmd_ = nullptr;
-                  cond_.signal(err);
-                  logic.async_process(cmd);
-                } else {
-                  if (wait_) {
-                    logic.process(err, *cmd);
-                    cond_.signal(); // err?
-                  }
-                  cmd_ = nullptr;
-                }
-              }
-            %>
-          }
+          t_cnt cnt{0};
+          if (eventfd_.read(err, set(cnt)) == VALID)
+            logic.async_process(cnt);
         }
       }
       return !err ? VALID : INVALID;
     }
 
-    t_validity request(t_err& err, t_command& cmd) noexcept {
+    t_validity post(t_err& err, t_cnt cnt) noexcept {
       T_ERR_GUARD(err) {
-        <% auto scope = cmdlock_.make_locked_scope(err);
-          if (scope == VALID) {
-            t_eventfd::t_value value = 1;
-            if (eventfd_.write(err, value) == VALID) {
-              <% auto scope = condlock_.make_locked_scope(err);
-                if (scope == VALID) {
-                  cmd_   = &cmd;
-                  async_ = false;
-                  wait_  = true;
-                  while (!err && cmd_)
-                    cond_.wait(err, condlock_);
-                  wait_  = false;
-                }
-              %>
-            }
-          }
-        %>
-      }
-      return !err ? VALID : INVALID;
-    }
-
-    t_validity async_request(t_err& err, t_command* cmd) noexcept {
-      T_ERR_GUARD(err) {
-        <% auto scope = cmdlock_.make_locked_scope(err);
-          if (scope == VALID) {
-            t_eventfd::t_value value = 1;
-            if (eventfd_.write(err, value) == VALID) {
-              <% auto scope = condlock_.make_locked_scope(err);
-                if (scope == VALID) {
-                  cmd_   = cmd;
-                  async_ = true;
-                  while (!err && cmd_)
-                    cond_.wait(err, condlock_);
-                }
-              %>
-            }
-          }
-        %>
+        eventfd_.write(err, get(cnt));
       }
       return !err ? VALID : INVALID;
     }
@@ -132,30 +77,15 @@ namespace command
     }
 
   private:
-    t_mutex_lock cmdlock_;
-    t_mutex_lock condlock_;
-    t_cond_var   cond_;
-    t_eventfd    eventfd_;
-    t_command*   cmd_     = nullptr;
-    t_bool       async_   = false;
-    t_bool       wait_    = false;
+    t_eventfd eventfd_;
   };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  t_validity t_client::request(t_err err, t_command& cmd) noexcept {
+  t_validity t_client::post(t_err err, t_cnt cnt) noexcept {
     T_ERR_GUARD(err) {
       if (impl_)
-        return impl_->request(err, cmd);
-      err = E_XXX;
-    }
-    return INVALID;
-  }
-
-  t_validity t_client::async_request(t_err err, t_command* cmd) noexcept {
-    T_ERR_GUARD(err) {
-      if (impl_)
-        return impl_->async_request(err, cmd);
+        return impl_->post(err, cnt);
       err = E_XXX;
     }
     return INVALID;

@@ -34,13 +34,7 @@ namespace dainty
 namespace mt
 {
   enum t_err_codes {
-    E_INVALID_INST,
-    E_VALID_INST,
-    E_INIT_FAIL,
-    E_DESTROY_FAIL,
-    E_ATTR_NOT_RECURSIVE,
-    E_ATTR_NOT_MONOTONIC,
-    E_XXX
+    E_XXX // add destription later
   };
 
   oops::t_def err_what(oops::t_id);
