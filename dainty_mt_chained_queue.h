@@ -30,6 +30,7 @@
 #include "dainty_named.h"
 #include "dainty_oops.h"
 #include "dainty_os_fdbased.h"
+#include "dainty_container_any.h"
 #include "dainty_container_chained_queue.h"
 #include "dainty_mt_err.h"
 
@@ -41,6 +42,7 @@ namespace chained_queue
 {
   using os::fdbased::t_fd;
   using named::t_void;
+  using named::t_bool;
   using named::p_cstr;
   using named::t_validity;
   using named::VALID;
@@ -49,11 +51,7 @@ namespace chained_queue
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  class t_any {
-  public:
-    virtual ~t_any() {};
-  };
-
+  using t_any   = container::any::t_any;
   using t_chain = container::chained_queue::t_chain<t_any>;
 
 ///////////////////////////////////////////////////////////////////////////////
