@@ -38,11 +38,11 @@ namespace command
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  class t_processor_impl_ {
+  class t_impl_ {
   public:
     using t_logic = t_processor::t_logic;
 
-    t_processor_impl_(t_err err) noexcept
+    t_impl_(t_err err) noexcept
       : cmdlock_(err), condlock_(err), cond_(err), eventfd_(err, t_n{0}) {
     }
 
@@ -170,7 +170,7 @@ namespace command
 
   t_processor::t_processor(t_err err) noexcept {
     T_ERR_GUARD(err) {
-      impl_ = new t_processor_impl_(err);
+      impl_ = new t_impl_(err);
       if (impl_) {
         if (err) {
           delete impl_;

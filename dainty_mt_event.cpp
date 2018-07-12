@@ -38,11 +38,11 @@ namespace event
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  class t_processor_impl_ {
+  class t_impl_ {
   public:
     using t_logic = t_processor::t_logic;
 
-    t_processor_impl_(t_err err) noexcept : eventfd_(err, t_n{0}) {
+    t_impl_(t_err err) noexcept : eventfd_(err, t_n{0}) {
     }
 
     operator t_validity() const noexcept {
@@ -96,7 +96,7 @@ namespace event
 
   t_processor::t_processor(t_err err) noexcept {
     T_ERR_GUARD(err) {
-      impl_ = new t_processor_impl_(err);
+      impl_ = new t_impl_(err);
       if (impl_) {
         if (err) {
           delete impl_;

@@ -55,7 +55,7 @@ namespace chained_queue
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  class t_processor_impl_;
+  class t_impl_;
 
   class t_client {
   public:
@@ -73,13 +73,13 @@ namespace chained_queue
 
   private:
     friend class t_processor;
-    friend class t_processor_impl_;
+    friend class t_impl_;
     t_client() = default;
-    t_client(t_processor_impl_* impl,
-             t_user user) noexcept : impl_(impl), user_(user) { }
+    t_client(t_impl_* impl, t_user user) noexcept : impl_(impl), user_(user) {
+    }
 
-    t_processor_impl_* impl_ = nullptr;
-    t_user             user_ = t_user{0L};
+    t_impl_* impl_ = nullptr;
+    t_user   user_ = t_user{0L};
   };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -113,7 +113,7 @@ namespace chained_queue
     t_client make_client(t_user) noexcept;
 
   private:
-    t_processor_impl_* impl_ = nullptr;
+    t_impl_* impl_ = nullptr;
   };
 
 ///////////////////////////////////////////////////////////////////////////////

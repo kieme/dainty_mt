@@ -38,12 +38,12 @@ namespace condvar_timed_event
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  class t_processor_impl_ {
+  class t_impl_ {
   public:
     using t_logic = t_processor::t_logic;
     using r_ctime = t_processor::r_ctime;
 
-    t_processor_impl_(t_err err) noexcept : lock_{err}, cond_{err} {
+    t_impl_(t_err err) noexcept : lock_{err}, cond_{err} {
     }
 
     operator t_validity() const noexcept {
@@ -149,7 +149,7 @@ namespace condvar_timed_event
 
   t_processor::t_processor(t_err err) noexcept {
     T_ERR_GUARD(err) {
-      impl_ = new t_processor_impl_(err);
+      impl_ = new t_impl_(err);
       if (impl_) {
         if (err) {
           delete impl_;

@@ -33,7 +33,6 @@ namespace mt
 {
 namespace chained_queue
 {
-  using namespace dainty::os;
   using namespace dainty::os::threading;
   using namespace dainty::os::fdbased;
 
@@ -41,12 +40,12 @@ namespace chained_queue
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  class t_processor_impl_ {
+  class t_impl_ {
   public:
     using t_chain = t_queue::t_chain;
     using t_logic = t_processor::t_logic;
 
-    t_processor_impl_(t_err err, t_n max) noexcept
+    t_impl_(t_err err, t_n max) noexcept
       : queue_{max}, eventfd_(err, t_n{0}) {
     }
 
@@ -151,7 +150,7 @@ namespace chained_queue
 
   t_processor::t_processor(t_err err, t_n max) noexcept {
     T_ERR_GUARD(err) {
-      impl_ = new t_processor_impl_(err, max);
+      impl_ = new t_impl_(err, max);
       if (impl_) {
         if (err) {
           delete impl_;
