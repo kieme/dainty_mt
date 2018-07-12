@@ -25,17 +25,16 @@
 ******************************************************************************/
 
 #include "dainty_os_threading.h"
-#include "dainty_mt_chained_queue.h"
+#include "dainty_mt_condvar_chained_queue.h"
 
 namespace dainty
 {
 namespace mt
 {
-namespace chained_queue
+namespace condvar_chained_queue
 {
   using named::t_n_;
   using namespace dainty::os::threading;
-  using namespace dainty::os::fdbased;
 
   using t_queue = container::chained_queue::t_chained_queue<t_any>;
 
@@ -46,13 +45,13 @@ namespace chained_queue
     using t_chain = t_queue::t_chain;
     using t_logic = t_processor::t_logic;
 
-    t_impl_(t_err err, t_n max) noexcept
-      : queue_{max}, eventfd_(err, t_n{0}), lock1_{err}, lock2_{err} {
+    t_impl_(t_err err, t_n max) noexcept :
+      queue_{max}, cond_{err}, lock1_{err}, lock2_{err} {
     }
 
     operator t_validity() const noexcept {
       return (queue_   == VALID &&
-              eventfd_ == VALID &&
+              cond_    == VALID &&
               lock1_   == VALID &&
               lock2_   == VALID) ? VALID : INVALID;
     }
@@ -60,20 +59,17 @@ namespace chained_queue
     t_validity process(t_err err, t_logic& logic, t_n max) noexcept {
       T_ERR_GUARD(err) {
         for (t_n_ n = get(max); !err && n; --n) {
-          t_eventfd::t_value value = 0;
-          if (eventfd_.read(err, value) == VALID) {
-            t_chain chain;
-            <% auto scope = lock2_.make_locked_scope(err);
-              if (scope == VALID)
-                chain = queue_.remove(err);
+          t_chain chain;
+          <% auto scope = lock2_.make_locked_scope(err);
+            cond_.wait(err, lock2_);
+            chain = queue_.remove(err);
+          %>
+
+          if (get(chain.cnt)) {
+            logic.async_process(chain);
+            <% auto scope = lock1_.make_locked_scope(err);
+              queue_.release(err, chain);
             %>
-            if (get(chain.cnt)) {
-              logic.async_process(chain);
-              <% auto scope = lock1_.make_locked_scope(err);
-                if (scope == VALID)
-                  queue_.release(err, chain);
-              %>
-            }
           }
         }
       }
@@ -97,18 +93,12 @@ namespace chained_queue
             send = queue_.is_empty();
             queue_.insert(err, chain);
           %>
-          if (send) {
-            t_eventfd::t_value value = 1;
-            eventfd_.write(err, value);
-          }
+          if (send)
+            cond_.signal(err);
         } else
           err = E_XXX;
       }
       return !err ? VALID : INVALID;
-    }
-
-    t_fd get_fd() const noexcept {
-      return eventfd_.get_fd();
     }
 
     t_client make_client(t_user user) noexcept {
@@ -118,7 +108,7 @@ namespace chained_queue
 
   private:
     t_queue      queue_;
-    t_eventfd    eventfd_;
+    t_cond_var   cond_;
     t_mutex_lock lock1_;
     t_mutex_lock lock2_;
   };
@@ -178,13 +168,6 @@ namespace chained_queue
       err = E_XXX;
     }
     return INVALID;
-  }
-
-  inline
-  t_fd t_processor::get_fd() const noexcept {
-    if (impl_)
-      return impl_->get_fd();
-    return BAD_FD;
   }
 
 ///////////////////////////////////////////////////////////////////////////////

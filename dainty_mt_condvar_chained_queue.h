@@ -24,10 +24,9 @@
 
 ******************************************************************************/
 
-#ifndef _DAINTY_MT_CHAINED_QUEUE_H_
-#define _DAINTY_MT_CHAINED_QUEUE_H_
+#ifndef _DAINTY_MT_CONDVAR_CHAINED_QUEUE_H_
+#define _DAINTY_MT_CONDVAR_CHAINED_QUEUE_H_
 
-#include "dainty_os_fdbased.h"
 #include "dainty_container_any.h"
 #include "dainty_container_chained_queue.h"
 #include "dainty_mt_err.h"
@@ -36,9 +35,8 @@ namespace dainty
 {
 namespace mt
 {
-namespace chained_queue
+namespace condvar_chained_queue
 {
-  using os::fdbased::t_fd;
   using named::t_n;
   using named::t_void;
   using named::t_validity;
@@ -57,7 +55,7 @@ namespace chained_queue
 
   class t_client {
   public:
-    using t_chain = chained_queue::t_chain;
+    using t_chain = condvar_chained_queue::t_chain;
 
     t_client(t_client&& client) noexcept;
 
@@ -86,7 +84,7 @@ namespace chained_queue
   public:
     class t_logic {
     public:
-      using t_chain = chained_queue::t_chain;
+      using t_chain = condvar_chained_queue::t_chain;
 
       virtual ~t_logic() { }
       virtual t_void async_process(t_chain) noexcept = 0;
@@ -103,8 +101,6 @@ namespace chained_queue
     t_processor& operator=(const t_processor&) = delete;
 
     operator t_validity () const noexcept;
-
-    t_fd get_fd() const noexcept;
 
     t_validity process(t_err, r_logic, t_n max = t_n{1}) noexcept;
 
