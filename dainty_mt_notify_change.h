@@ -90,8 +90,8 @@ namespace notify_change
 
     using r_logic = t_logic&;
 
-     t_processor(t_err)         noexcept;
-     t_processor(t_processor&&) noexcept;
+     t_processor(t_err, t_any&&) noexcept;
+     t_processor(t_processor&&)  noexcept;
     ~t_processor();
 
     t_processor(const t_processor&)            = delete;

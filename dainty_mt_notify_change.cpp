@@ -42,8 +42,8 @@ namespace notify_change
   public:
     using t_logic = t_processor::t_logic;
 
-    t_impl_(t_err err) noexcept
-      : lock_(err), eventfd_(err, t_n{0}) {
+    t_impl_(t_err err, t_any&& any) noexcept
+      : lock_(err), eventfd_(err, t_n{0}), any_(std::move(any)) {
     }
 
     operator t_validity() const noexcept {
@@ -127,9 +127,9 @@ namespace notify_change
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  t_processor::t_processor(t_err err) noexcept {
+  t_processor::t_processor(t_err err, t_any&& any) noexcept {
     T_ERR_GUARD(err) {
-      impl_ = new t_impl_(err);
+      impl_ = new t_impl_(err, std::move(any));
       if (impl_) {
         if (err) {
           delete impl_;
