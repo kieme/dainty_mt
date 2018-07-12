@@ -41,15 +41,14 @@ namespace mt
 namespace chained_queue
 {
   using os::fdbased::t_fd;
+  using named::t_n;
   using named::t_void;
-  using named::t_bool;
-  using named::p_cstr;
   using named::t_validity;
   using named::VALID;
   using named::INVALID;
-  using named::t_n;
 
-///////////////////////////////////////////////////////////////////////////////
+  enum  t_user_tag_ { };
+  using t_user = named::t_user<t_user_tag_>;
 
   using t_any   = container::any::t_any;
   using t_chain = container::chained_queue::t_chain<t_any>;
@@ -76,9 +75,11 @@ namespace chained_queue
     friend class t_processor;
     friend class t_processor_impl_;
     t_client() = default;
-    t_client(t_processor_impl_* impl) noexcept : impl_(impl) { }
+    t_client(t_processor_impl_* impl,
+             t_user user) noexcept : impl_(impl), user_(user) { }
 
     t_processor_impl_* impl_ = nullptr;
+    t_user             user_ = t_user{0L};
   };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -109,7 +110,7 @@ namespace chained_queue
 
     t_validity process(t_err, r_logic, t_n max = t_n{1}) noexcept;
 
-    t_client make_client() noexcept; // const char* - literal - XXX
+    t_client make_client(t_user) noexcept;
 
   private:
     t_processor_impl_* impl_ = nullptr;
@@ -118,8 +119,10 @@ namespace chained_queue
 ///////////////////////////////////////////////////////////////////////////////
 
   inline
-  t_client::t_client(t_client&& client) noexcept : impl_(client.impl_) {
+  t_client::t_client(t_client&& client) noexcept
+      : impl_(client.impl_), user_(client.user_) {
     client.impl_ = nullptr;
+    client.user_ = t_user{0L};
   }
 
   inline

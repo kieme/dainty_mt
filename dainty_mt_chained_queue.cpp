@@ -80,7 +80,7 @@ namespace chained_queue
       return !err ? VALID : INVALID;
     }
 
-    t_chain acquire(t_err& err, t_n n) noexcept {
+    t_chain acquire(t_err& err, t_user, t_n n) noexcept {
       T_ERR_GUARD(err) {
         <% auto scope = lock1_.make_locked_scope(err);
           if (scope == VALID) {
@@ -91,7 +91,7 @@ namespace chained_queue
       return {};
     }
 
-    t_validity insert(t_err& err, t_chain& chain) noexcept {
+    t_validity insert(t_err& err, t_user, t_chain& chain) noexcept {
       T_ERR_GUARD(err) {
         if (get(chain.cnt)) {
           t_bool send = false;
@@ -115,8 +115,9 @@ namespace chained_queue
       return eventfd_.get_fd();
     }
 
-    t_client make_client() noexcept {
-      return {this}; // NOTE: future, we have information on clients.
+    t_client make_client(t_user user) noexcept {
+      // NOTE: future, we have information on clients.
+      return {this, user};
     }
 
   private:
@@ -131,7 +132,7 @@ namespace chained_queue
   t_client::t_chain t_client::acquire(t_err err, t_n cnt) noexcept {
     T_ERR_GUARD(err) {
       if (impl_)
-        return impl_->acquire(err, cnt);
+        return impl_->acquire(err, user_, cnt);
       err = E_XXX;
     }
     return {};
@@ -140,7 +141,7 @@ namespace chained_queue
   t_validity t_client::insert(t_err err, t_chain chain) noexcept {
     T_ERR_GUARD(err) {
       if (impl_)
-        return impl_->insert(err, chain);
+        return impl_->insert(err, user_, chain);
       err = E_XXX;
     }
     return INVALID;
@@ -162,14 +163,14 @@ namespace chained_queue
   }
 
   t_processor::~t_processor() {
-    if (impl_) { // NOTE: can check to see if clients exists
+    if (impl_) {
       delete impl_;
     }
   }
 
-  t_client t_processor::make_client() noexcept {
+  t_client t_processor::make_client(t_user user) noexcept {
     if (impl_)
-      return impl_->make_client();
+      return impl_->make_client(user);
     return {};
   }
 

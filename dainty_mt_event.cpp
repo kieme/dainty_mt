@@ -33,7 +33,6 @@ namespace mt
 {
 namespace event
 {
-  using namespace dainty::os;
   using namespace dainty::os::threading;
   using namespace dainty::os::fdbased;
 
@@ -61,8 +60,9 @@ namespace event
       return !err ? VALID : INVALID;
     }
 
-    t_validity post(t_err& err, t_cnt cnt) noexcept {
+    t_validity post(t_err& err, t_user, t_cnt cnt) noexcept {
       T_ERR_GUARD(err) {
+        // NOTE: future, we have information on clients.
         eventfd_.write(err, get(cnt));
       }
       return !err ? VALID : INVALID;
@@ -72,8 +72,9 @@ namespace event
       return eventfd_.get_fd();
     }
 
-    t_client make_client() noexcept {
-      return {this}; // NOTE: future, we have information on clients.
+    t_client make_client(t_user user) noexcept {
+      // NOTE: future, we have information on clients.
+      return {this, user};
     }
 
   private:
@@ -85,7 +86,7 @@ namespace event
   t_validity t_client::post(t_err err, t_cnt cnt) noexcept {
     T_ERR_GUARD(err) {
       if (impl_)
-        return impl_->post(err, cnt);
+        return impl_->post(err, user_, cnt);
       err = E_XXX;
     }
     return INVALID;
@@ -112,9 +113,9 @@ namespace event
     }
   }
 
-  t_client t_processor::make_client() noexcept {
+  t_client t_processor::make_client(t_user user) noexcept {
     if (impl_)
-      return impl_->make_client();
+      return impl_->make_client(user);
     return {};
   }
 

@@ -57,13 +57,14 @@ namespace condvar_command
           <% auto scope = lock_.make_locked_scope(err);
             if (scope == VALID && reqcond_.wait(err, lock_) == VALID) {
               t_command* cmd = cmd_;
+              t_user     user = user_;
               if (async_) {
                 cmd_ = nullptr;
                 ackcond_.signal(err);
-                logic.async_process(cmd);
+                logic.async_process(user, cmd);
               } else {
                 if (wait_) {
-                  logic.process(err, *cmd);
+                  logic.process(err, user, *cmd);
                   ackcond_.signal(); // err?
                 }
                 cmd_ = nullptr;
@@ -75,13 +76,14 @@ namespace condvar_command
       return !err ? VALID : INVALID;
     }
 
-    t_validity request(t_err& err, t_command& cmd) noexcept {
+    t_validity request(t_err& err, t_user user, t_command& cmd) noexcept {
       T_ERR_GUARD(err) {
         <% auto scope = cmdlock_.make_locked_scope(err);
           if (scope == VALID) {
             <% auto scope = lock_.make_locked_scope(err);
               if (scope == VALID) {
                 if (reqcond_.signal(err) == VALID) {
+                  user_  = user;
                   cmd_   = &cmd;
                   async_ = false;
                   wait_  = true;
@@ -97,13 +99,15 @@ namespace condvar_command
       return !err ? VALID : INVALID;
     }
 
-    t_validity async_request(t_err& err, t_command* cmd) noexcept {
+    t_validity async_request(t_err& err, t_user user,
+                             t_command* cmd) noexcept {
       T_ERR_GUARD(err) {
         <% auto scope = cmdlock_.make_locked_scope(err);
           if (scope == VALID) {
             <% auto scope = lock_.make_locked_scope(err);
               if (scope == VALID) {
                 if (reqcond_.signal(err) == VALID) {
+                  user_  = user;
                   cmd_   = cmd;
                   async_ = true;
                   while (!err && cmd_)
@@ -117,8 +121,9 @@ namespace condvar_command
       return !err ? VALID : INVALID;
     }
 
-    t_client make_client() noexcept {
-      return {this}; // NOTE: future, we have information on clients.
+    t_client make_client(t_user user) noexcept {
+      // NOTE: future, we have information on clients.
+      return {this, user};
     }
 
   private:
@@ -127,6 +132,7 @@ namespace condvar_command
     t_cond_var   reqcond_;
     t_cond_var   ackcond_;
     t_command*   cmd_     = nullptr;
+    t_user       user_    = t_user{0L};
     t_bool       async_   = false;
     t_bool       wait_    = false;
   };
@@ -136,7 +142,7 @@ namespace condvar_command
   t_validity t_client::request(t_err err, t_command& cmd) noexcept {
     T_ERR_GUARD(err) {
       if (impl_)
-        return impl_->request(err, cmd);
+        return impl_->request(err, user_, cmd);
       err = E_XXX;
     }
     return INVALID;
@@ -145,7 +151,7 @@ namespace condvar_command
   t_validity t_client::async_request(t_err err, t_command* cmd) noexcept {
     T_ERR_GUARD(err) {
       if (impl_)
-        return impl_->async_request(err, cmd);
+        return impl_->async_request(err, user_, cmd);
       err = E_XXX;
     }
     return INVALID;
@@ -172,9 +178,9 @@ namespace condvar_command
     }
   }
 
-  t_client t_processor::make_client() noexcept {
+  t_client t_processor::make_client(t_user user) noexcept {
     if (impl_)
-      return impl_->make_client();
+      return impl_->make_client(user);
     return {};
   }
 

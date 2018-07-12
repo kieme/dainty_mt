@@ -25,13 +25,13 @@
 ******************************************************************************/
 
 #include "dainty_os_threading.h"
-#include "dainty_mt_timed_event.h"
+#include "dainty_mt_condvar_timed_event.h"
 
 namespace dainty
 {
 namespace mt
 {
-namespace timed_event
+namespace condvar_timed_event
 {
   using named::t_n_;
   using namespace dainty::os::threading;
@@ -111,7 +111,7 @@ namespace timed_event
       return !err ? VALID : INVALID;
     }
 
-    t_validity post(t_err& err, t_cnt cnt) noexcept {
+    t_validity post(t_err& err, t_user, t_cnt cnt) noexcept {
       T_ERR_GUARD(err) {
         <% auto scope = lock_.make_locked_scope(err);
           const t_bool signal = !cnt_;
@@ -123,8 +123,9 @@ namespace timed_event
       return !err ? VALID : INVALID;
     }
 
-    t_client make_client() noexcept {
-      return {this}; // NOTE: future, we have information on clients.
+    t_client make_client(t_user user) noexcept {
+      // NOTE: future, we have information on clients.
+      return {this, user};
     }
 
   private:
@@ -138,7 +139,7 @@ namespace timed_event
   t_validity t_client::post(t_err err, t_cnt cnt) noexcept {
     T_ERR_GUARD(err) {
       if (impl_)
-        return impl_->post(err, cnt);
+        return impl_->post(err, user_, cnt);
       err = E_XXX;
     }
     return INVALID;
@@ -174,9 +175,9 @@ namespace timed_event
     return t_cnt{0};
   }
 
-  t_client t_processor::make_client() noexcept {
+  t_client t_processor::make_client(t_user user) noexcept {
     if (impl_)
-      return impl_->make_client();
+      return impl_->make_client(user);
     return {};
   }
 

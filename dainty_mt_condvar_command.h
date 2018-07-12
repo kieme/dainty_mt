@@ -42,6 +42,9 @@ namespace condvar_command
   using named::VALID;
   using named::INVALID;
 
+  enum  t_user_tag_ { };
+  using t_user = named::t_user<t_user_tag_>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
   using t_id = named::t_uint;
@@ -74,9 +77,11 @@ namespace condvar_command
     friend class t_processor;
     friend class t_processor_impl_;
     t_client() = default;
-    t_client(t_processor_impl_* impl) noexcept : impl_(impl) { }
+    t_client(t_processor_impl_* impl,
+             t_user user) noexcept : impl_(impl), user_(user) { }
 
     t_processor_impl_* impl_ = nullptr;
+    t_user             user_ = t_user{0L};
   };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -86,13 +91,14 @@ namespace condvar_command
     class t_logic {
     public:
       using t_err     = oops::t_oops<>;
+      using t_user    = condvar_command::t_user;
       using t_command = condvar_command::t_command;
       using p_command = t_command*;
       using r_command = t_command&;
 
       virtual ~t_logic() { }
-      virtual t_void       process(t_err, r_command) noexcept = 0;
-      virtual t_void async_process(       p_command) noexcept = 0;
+      virtual t_void       process(t_err, t_user, r_command) noexcept = 0;
+      virtual t_void async_process(       t_user, p_command) noexcept = 0;
     };
 
     using r_logic = t_logic&;
@@ -109,7 +115,7 @@ namespace condvar_command
 
     t_validity process(t_err, r_logic, t_n max = t_n{1}) noexcept;
 
-    t_client make_client() noexcept; // const char* - literal - XXX
+    t_client make_client(t_user) noexcept;
 
   private:
     t_processor_impl_* impl_ = nullptr;
@@ -118,8 +124,10 @@ namespace condvar_command
 ///////////////////////////////////////////////////////////////////////////////
 
   inline
-  t_client::t_client(t_client&& client) noexcept : impl_(client.impl_) {
+  t_client::t_client(t_client&& client) noexcept
+    : impl_(client.impl_), user_(client.user_) {
     client.impl_ = nullptr;
+    client.user_ = t_user{0L};
   }
 
   inline

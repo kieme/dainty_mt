@@ -41,16 +41,18 @@ namespace event
   using os::fdbased::t_fd;
   using named::t_n;
   using named::t_void;
-  using named::p_cstr;
   using named::t_validity;
   using named::VALID;
   using named::INVALID;
 
-///////////////////////////////////////////////////////////////////////////////
+  enum  t_user_tag_ { };
+  using t_user = named::t_user<t_user_tag_>;
 
-  enum  t_cnt_tag_ {};
+  enum  t_cnt_tag_ { };
   using t_cnt_ = named::t_uint64;
   using t_cnt  = named::t_explicit<t_cnt_, t_cnt_tag_>;
+
+///////////////////////////////////////////////////////////////////////////////
 
   class t_processor_impl_;
 
@@ -69,9 +71,11 @@ namespace event
     friend class t_processor;
     friend class t_processor_impl_;
     t_client() = default;
-    t_client(t_processor_impl_* impl) noexcept : impl_(impl) { }
+    t_client(t_processor_impl_* impl,
+             t_user user) noexcept : impl_(impl), user_(user) { }
 
     t_processor_impl_* impl_ = nullptr;
+    t_user             user_ = t_user{0L};
   };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -80,8 +84,7 @@ namespace event
   public:
     class t_logic {
     public:
-      using t_err = oops::t_oops<>;
-      using t_cnt = event::t_cnt;
+      using t_cnt  = event::t_cnt;
 
       virtual ~t_logic() { }
       virtual t_void async_process(t_cnt) noexcept = 0;
@@ -103,7 +106,7 @@ namespace event
 
     t_validity process(t_err, r_logic, t_n max = t_n{1}) noexcept;
 
-    t_client make_client() noexcept; // const char* - literal - XXX
+    t_client make_client(t_user) noexcept;
 
   private:
     t_processor_impl_* impl_ = nullptr;
@@ -112,8 +115,10 @@ namespace event
 ///////////////////////////////////////////////////////////////////////////////
 
   inline
-  t_client::t_client(t_client&& client) noexcept : impl_(client.impl_) {
+  t_client::t_client(t_client&& client) noexcept
+      : impl_(client.impl_), user_(client.user_) {
     client.impl_ = nullptr;
+    client.user_ = t_user{0L};
   }
 
   inline
