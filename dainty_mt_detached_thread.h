@@ -24,11 +24,9 @@
 
 ******************************************************************************/
 
-#ifndef _DAINTY_MT_THREADS_H_
-#define _DAINTY_MT_THREADS_H_
+#ifndef _DAINTY_MT_DETACHED_THREAD_H_
+#define _DAINTY_MT_DETACHED_THREAD_H_
 
-#include "dainty_named.h"
-#include "dainty_oops.h"
 #include "dainty_os_threading.h"
 #include "dainty_mt_err.h"
 
@@ -36,7 +34,7 @@ namespace dainty
 {
 namespace mt
 {
-namespace threads
+namespace detached_thread
 {
   using named::t_void;
   using named::p_void;
@@ -48,40 +46,7 @@ namespace threads
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  class t_thread {
-  public:
-    class t_logic {
-    public:
-      virtual ~t_logic() { }
-      virtual t_validity update (t_err, ::pthread_attr_t&) noexcept;
-      virtual t_validity prepare(t_err)                    noexcept;
-      virtual p_void     run    ()                         noexcept = 0;
-    };
-
-    using p_logic = t_logic*;
-
-    t_thread(t_err, p_cstr name, p_logic, t_bool del_logic) noexcept;
-
-    t_thread(const t_thread&)            = delete;
-    t_thread(t_thread&&)                 = delete;
-    t_thread& operator=(const t_thread&) = delete;
-    t_thread& operator=(t_thread&&)      = delete;
-
-    operator t_validity() const noexcept;
-
-    t_validity join()      noexcept;
-    t_validity join(t_err) noexcept;
-
-    t_validity join(       p_void&) noexcept;
-    t_validity join(t_err, p_void&) noexcept;
-
-  private:
-    os::threading::t_pthread thread_;
-  };
-
-///////////////////////////////////////////////////////////////////////////////
-
-  class t_detachedthread {
+  class t_detached_thread {
   public:
     class t_logic {
     public:
@@ -93,12 +58,12 @@ namespace threads
 
     using p_logic = t_logic*;
 
-    t_detachedthread(t_err, p_cstr name, p_logic, t_bool del_logic) noexcept;
+    t_detached_thread(t_err, p_cstr name, p_logic, t_bool del_logic) noexcept;
 
-    t_detachedthread(const t_detachedthread&)            = delete;
-    t_detachedthread(t_detachedthread&&)                 = delete;
-    t_detachedthread& operator=(const t_detachedthread&) = delete;
-    t_detachedthread& operator=(t_detachedthread&&)      = delete;
+    t_detached_thread(const t_detached_thread&)            = delete;
+    t_detached_thread(t_detached_thread&&)                 = delete;
+    t_detached_thread& operator=(const t_detached_thread&) = delete;
+    t_detached_thread& operator=(t_detached_thread&&)      = delete;
 
   private:
     os::threading::t_pthread thread_;
