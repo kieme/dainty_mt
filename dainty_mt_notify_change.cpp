@@ -63,7 +63,7 @@ namespace notify_change
                 changed = changed_;
                 if (changed) {
                   user = user_;
-                  any  = std::move(any_);
+                  any  = any_;
                   changed_ = false;
                 }
               }
