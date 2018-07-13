@@ -25,7 +25,7 @@
 ******************************************************************************/
 
 #include "dainty_os_threading.h"
-#include "dainty_mt_notify_change.h"
+#include "dainty_mt_condvar_notify_change.h"
 
 namespace dainty
 {
@@ -34,7 +34,6 @@ namespace mt
 namespace notify_change
 {
   using namespace dainty::os::threading;
-  using namespace dainty::os::fdbased;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -43,34 +42,31 @@ namespace notify_change
     using t_logic = t_processor::t_logic;
 
     t_impl_(t_err err, t_any&& any) noexcept
-      : lock_(err), eventfd_(err, t_n{0}), any_(std::move(any)) {
+      : lock_(err), cond_(err), any_(std::move(any)) {
     }
 
     operator t_validity() const noexcept {
-      return (lock_ == VALID && eventfd_ == VALID) ?  VALID : INVALID;
+      return (lock_ == VALID && cond_ == VALID) ? VALID : INVALID;
     }
 
     t_validity process(t_err err, t_logic& logic, t_n max) noexcept {
       T_ERR_GUARD(err) {
         for (t_n_ n = get(max); !err && n; --n) {
-          t_eventfd::t_value value = 0;
-          if (eventfd_.read(err, value) == VALID) {
-            t_any  any;
-            t_user user;
-            t_bool changed = false;
-            <% auto scope = lock_.make_locked_scope(err);
-              if (scope == VALID) {
-                changed = changed_;
-                if (changed) {
-                  user = user_;
-                  any  = any_;
-                  changed_ = false;
-                }
+          t_any  any;
+          t_user user;
+          <% auto scope = lock_.make_locked_scope(err);
+            if (scope == VALID) {
+              while (!changed_ && !err)
+                cond_.wait(err, lock_);
+              changed_ = false;
+              if (!err) {
+                user = user_;
+                any  = any_;
               }
-            %>
-            if (!err && changed)
-              logic.process(user, std::move(any));
-          }
+            }
+          %>
+          if (!err)
+            logic.process(user, std::move(any));
         }
       }
       return !err ? VALID : INVALID;
@@ -83,17 +79,11 @@ namespace notify_change
             user_    = user;
             any_     = std::move(any);
             changed_ = true;
-
-            t_eventfd::t_value value = 1;
-            eventfd_.write(err, value);
+            cond_.signal(err);
           }
         %>
       }
       return !err ? VALID : INVALID;
-    }
-
-    t_fd get_fd() const noexcept {
-      return eventfd_.get_fd();
     }
 
     t_client make_client(t_user user) noexcept {
@@ -103,7 +93,7 @@ namespace notify_change
 
   private:
     t_mutex_lock lock_;
-    t_eventfd    eventfd_;
+    t_cond_var   cond_;
     t_any        any_;
     t_user       user_    = t_user{0L};
     t_bool       changed_ = false;
@@ -155,13 +145,6 @@ namespace notify_change
       err = E_XXX;
     }
     return INVALID;
-  }
-
-  inline
-  t_fd t_processor::get_fd() const noexcept {
-    if (impl_)
-      return impl_->get_fd();
-    return BAD_FD;
   }
 
 ///////////////////////////////////////////////////////////////////////////////
