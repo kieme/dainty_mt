@@ -50,6 +50,8 @@ namespace detached_thread
   public:
     class t_logic {
     public:
+      using t_err = oops::t_oops<>;
+
       virtual ~t_logic() { }
       virtual t_validity update (t_err, ::pthread_attr_t&) noexcept;
       virtual t_validity prepare(t_err)                    noexcept;
