@@ -46,7 +46,7 @@ namespace detached_thread
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  class t_detached_thread {
+  class t_thread {
   public:
     class t_logic {
     public:
@@ -60,12 +60,12 @@ namespace detached_thread
 
     using p_logic = t_logic*;
 
-    t_detached_thread(t_err, p_cstr name, p_logic, t_bool del_logic) noexcept;
+    t_thread(t_err, p_cstr name, p_logic, t_bool del_logic) noexcept;
 
-    t_detached_thread(const t_detached_thread&)            = delete;
-    t_detached_thread(t_detached_thread&&)                 = delete;
-    t_detached_thread& operator=(const t_detached_thread&) = delete;
-    t_detached_thread& operator=(t_detached_thread&&)      = delete;
+    t_thread(const t_thread&)            = delete;
+    t_thread(t_thread&&)                 = delete;
+    t_thread& operator=(const t_thread&) = delete;
+    t_thread& operator=(t_thread&&)      = delete;
 
   private:
     os::threading::t_pthread thread_;

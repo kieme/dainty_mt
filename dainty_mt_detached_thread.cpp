@@ -60,7 +60,7 @@ namespace detached_thread
 ///////////////////////////////////////////////////////////////////////////////
 
     p_void start_(p_void arg) {
-      using p_logic = t_detached_thread::t_logic*;
+      using p_logic = t_thread::t_logic*;
       t_data_* data = reinterpret_cast<t_data_*>(arg);
 
       t_err&  err       = data->err_;
@@ -90,9 +90,8 @@ namespace detached_thread
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  t_validity
-      t_detached_thread::t_logic::update(t_err err,
-                                         ::pthread_attr_t& attr) noexcept {
+  t_validity t_thread::t_logic::update(t_err err,
+                                       ::pthread_attr_t& attr) noexcept {
     T_ERR_GUARD(err) {
       if ((!::pthread_attr_setstacksize   (&attr, (128*1024)))             &&
           (!::pthread_attr_setguardsize   (&attr, (4 * 1024)))             &&
@@ -105,17 +104,15 @@ namespace detached_thread
     return INVALID;
   }
 
-  t_validity t_detached_thread::t_logic::prepare(t_err err) noexcept {
+  t_validity t_thread::t_logic::prepare(t_err err) noexcept {
     T_ERR_GUARD(err) {
       return VALID;
     }
     return INVALID;
   }
 
-  t_detached_thread::t_detached_thread(t_err   err,
-                                     p_cstr  name,
-                                     p_logic logic,
-                                     t_bool  del_logic) noexcept {
+  t_thread::t_thread(t_err err, p_cstr name, p_logic logic,
+                     t_bool del_logic) noexcept {
     T_ERR_GUARD(err) {
       t_data_ data{err, name, logic, del_logic};
       if (get(name) && logic && data.cond_ == VALID && data.lock_ == VALID) {
