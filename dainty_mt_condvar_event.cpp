@@ -103,9 +103,8 @@ namespace condvar_event
         if (scope == VALID) {
           const t_bool signal = !cnt_;
           cnt_ += get(cnt);
-          if (signal)
-            if (cond_.signal())
-              return INVALID;
+          if (signal && cond_.signal())
+            return INVALID;
           return VALID;
         }
       %>
@@ -114,10 +113,12 @@ namespace condvar_event
 
     t_validity post(t_err& err, t_user, t_cnt cnt) noexcept {
       <% auto scope = lock_.make_locked_scope(err);
-        const t_bool signal = !cnt_;
-        cnt_ += get(cnt);
-        if (signal)
-          cond_.signal(err);
+        if (scope == VALID) {
+          const t_bool signal = !cnt_;
+          cnt_ += get(cnt);
+          if (signal)
+            cond_.signal(err);
+        }
       %>
       return !err ? VALID : INVALID;
     }

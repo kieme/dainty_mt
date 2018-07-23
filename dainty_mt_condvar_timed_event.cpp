@@ -60,26 +60,24 @@ namespace condvar_timed_event
 
     t_validity process(t_err err, t_logic& logic, r_ctime time,
                        t_n max) noexcept {
-      T_ERR_GUARD(err) {
-        for (t_n_ n = get(max); !err && n; --n) {
-          t_cnt cnt{0};
-          <% auto scope = lock_.make_locked_scope(err);
-            if (scope == VALID) {
-              if (!cnt_) {
-                do {
-                  cond_.wait_for(err, lock_, time);
-                } while (!err && !cnt_);
-              }
-              set(cnt) = cnt_;
-              cnt_ = 0;
+      for (t_n_ n = get(max); !err && n; --n) {
+        t_cnt cnt{0};
+        <% auto scope = lock_.make_locked_scope(err);
+          if (scope == VALID) {
+            if (!cnt_) {
+              do {
+                cond_.wait_for(err, lock_, time);
+              } while (!err && !cnt_);
             }
-          %>
-          if (!err)
-            logic.async_process(cnt);
-          else if (err.id() == os::E_TIMEOUT) {
-            err.clear();
-            logic.timeout_process(time);
+            set(cnt) = cnt_;
+            cnt_ = 0;
           }
+        %>
+        if (!err)
+          logic.async_process(cnt);
+        else if (err.id() == os::E_TIMEOUT) {
+          err.clear();
+          logic.timeout_process(time);
         }
       }
       return !err ? VALID : INVALID;
@@ -87,43 +85,59 @@ namespace condvar_timed_event
 
     t_validity reset_then_process(t_err err, t_logic& logic, r_ctime time,
                                   t_n max) noexcept {
-      T_ERR_GUARD(err) {
-        for (t_n_ n = get(max); !err && n; --n) {
-          t_cnt cnt{0};
-          <% auto scope = lock_.make_locked_scope(err);
-            if (scope == VALID) {
-              cnt_ = 0;
-              do {
-                cond_.wait_for(err, lock_, time);
-              } while (!err && !cnt_);
-              set(cnt) = cnt_;
-              cnt_ = 0;
-            }
-          %>
-          if (!err)
-            logic.async_process(cnt);
-          else if (err.id() == os::E_TIMEOUT) {
-            err.clear();
-            logic.timeout_process(time);
+      for (t_n_ n = get(max); !err && n; --n) {
+        t_cnt cnt{0};
+        <% auto scope = lock_.make_locked_scope(err);
+          if (scope == VALID) {
+            cnt_ = 0;
+            do {
+              cond_.wait_for(err, lock_, time);
+            } while (!err && !cnt_);
+            set(cnt) = cnt_;
+            cnt_ = 0;
           }
+        %>
+        if (!err)
+          logic.async_process(cnt);
+        else if (err.id() == os::E_TIMEOUT) {
+          err.clear();
+          logic.timeout_process(time);
         }
       }
       return !err ? VALID : INVALID;
     }
 
+    t_validity post(t_user, t_cnt cnt) noexcept {
+      <% auto scope = lock_.make_locked_scope();
+        if (scope == VALID) {
+          const t_bool signal = !cnt_;
+          cnt_ += get(cnt);
+          if (signal && cond_.signal())
+            return INVALID;
+          return VALID;
+        }
+      %>
+      return INVALID;
+    }
+
     t_validity post(t_err& err, t_user, t_cnt cnt) noexcept {
-      T_ERR_GUARD(err) {
-        <% auto scope = lock_.make_locked_scope(err);
+      <% auto scope = lock_.make_locked_scope(err);
+        if (scope == VALID) {
           const t_bool signal = !cnt_;
           cnt_ += get(cnt);
           if (signal)
             cond_.signal(err);
-        %>
-      }
+        }
+      %>
       return !err ? VALID : INVALID;
     }
 
     t_client make_client(t_user user) noexcept {
+      // NOTE: future, we have information on clients.
+      return {this, user};
+    }
+
+    t_client make_client(t_err&, t_user user) noexcept {
       // NOTE: future, we have information on clients.
       return {this, user};
     }
@@ -136,9 +150,15 @@ namespace condvar_timed_event
 
 ///////////////////////////////////////////////////////////////////////////////
 
+  t_validity t_client::post(t_cnt cnt) noexcept {
+    if (impl_)
+      return impl_->post(user_, cnt);
+    return INVALID;
+  }
+
   t_validity t_client::post(t_err err, t_cnt cnt) noexcept {
     T_ERR_GUARD(err) {
-      if (impl_)
+      if (impl_ && *impl_ == VALID)
         return impl_->post(err, user_, cnt);
       err = E_XXX;
     }
@@ -168,7 +188,7 @@ namespace condvar_timed_event
 
   t_cnt t_processor::get_cnt(t_err err) {
     T_ERR_GUARD(err) {
-      if (impl_)
+      if (impl_ && *impl_ == VALID)
         return impl_->get_cnt(err);
       err = E_XXX;
     }
@@ -181,10 +201,19 @@ namespace condvar_timed_event
     return {};
   }
 
+  t_client t_processor::make_client(t_err err, t_user user) noexcept {
+    T_ERR_GUARD(err) {
+      if (impl_ && *impl_ == VALID)
+        return impl_->make_client(err, user);
+      err = E_XXX;
+    }
+    return {};
+  }
+
   t_validity t_processor::process(t_err err, t_logic& logic, r_ctime time,
                                   t_n max) noexcept {
     T_ERR_GUARD(err) {
-      if (impl_)
+      if (impl_ && *impl_ == VALID)
         return impl_->process(err, logic, time, max);
       err = E_XXX;
     }
@@ -194,7 +223,7 @@ namespace condvar_timed_event
   t_validity t_processor::reset_then_process(t_err err, t_logic& logic,
                                              r_ctime time, t_n max) noexcept {
     T_ERR_GUARD(err) {
-      if (impl_)
+      if (impl_ && *impl_ == VALID)
         return impl_->reset_then_process(err, logic, time, max);
       err = E_XXX;
     }
