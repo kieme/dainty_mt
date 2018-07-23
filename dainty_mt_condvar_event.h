@@ -62,6 +62,7 @@ namespace condvar_event
 
     operator t_validity() const noexcept;
 
+    t_validity post(       t_cnt = t_cnt{1}) noexcept;
     t_validity post(t_err, t_cnt = t_cnt{1}) noexcept;
 
   private:
@@ -104,7 +105,8 @@ namespace condvar_event
     t_validity            process(t_err, r_logic, t_n max = t_n{1}) noexcept;
     t_validity reset_then_process(t_err, r_logic, t_n max = t_n{1}) noexcept;
 
-    t_client make_client(t_user) noexcept;
+    t_client make_client(       t_user) noexcept;
+    t_client make_client(t_err, t_user) noexcept;
 
   private:
     t_impl_* impl_ = nullptr;
