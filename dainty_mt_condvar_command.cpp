@@ -53,7 +53,7 @@ namespace condvar_command
               ackcond_ == VALID) ?  VALID : INVALID;
     }
 
-    t_validity process(t_err err, t_logic& logic, t_n max) noexcept {
+    t_validity process(t_err& err, t_logic& logic, t_n max) noexcept {
       for (t_n_ n = get(max); !err && n; --n) {
         <% auto scope = lock_.make_locked_scope(err);
           if (scope == VALID && reqcond_.wait(err, lock_) == VALID) {

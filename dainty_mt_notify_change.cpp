@@ -50,45 +50,54 @@ namespace notify_change
       return (lock_ == VALID && eventfd_ == VALID) ?  VALID : INVALID;
     }
 
-    t_validity process(t_err err, t_logic& logic, t_n max) noexcept {
-      T_ERR_GUARD(err) {
-        for (t_n_ n = get(max); !err && n; --n) {
-          t_eventfd::t_value value = 0;
-          if (eventfd_.read(err, value) == VALID) {
-            t_any  any;
-            t_user user;
-            t_bool changed = false;
-            <% auto scope = lock_.make_locked_scope(err);
-              if (scope == VALID) {
-                changed = changed_;
-                if (changed) {
-                  user = user_;
-                  any  = any_;
-                  changed_ = false;
-                }
+    t_validity process(t_err& err, t_logic& logic, t_n max) noexcept {
+      for (t_n_ n = get(max); !err && n; --n) {
+        t_eventfd::t_value value = 0;
+        if (eventfd_.read(err, value) == VALID) {
+          t_any  any;
+          t_user user;
+          t_bool changed = false;
+          <% auto scope = lock_.make_locked_scope(err);
+            if (scope == VALID) {
+              changed = changed_;
+              if (changed) {
+                user = user_;
+                any  = any_;
+                changed_ = false;
               }
-            %>
-            if (!err && changed)
-              logic.process(user, std::move(any));
-          }
+            }
+          %>
+          if (!err && changed)
+            logic.process(user, std::move(any));
         }
       }
       return !err ? VALID : INVALID;
     }
 
-    t_validity post(t_err& err, t_user user, t_any&& any) noexcept {
-      T_ERR_GUARD(err) {
-        <% auto scope = lock_.make_locked_scope(err);
-          if (scope == VALID && any != any_) {
-            user_    = user;
-            any_     = std::move(any);
-            changed_ = true;
+    t_validity post(t_user user, t_any&& any) noexcept {
+      <% auto scope = lock_.make_locked_scope();
+        if (scope == VALID && any != any_) {
+          user_    = user;
+          any_     = std::move(any);
+          changed_ = true;
+          t_eventfd::t_value value = 1;
+          return eventfd_.write(value);
+        }
+      %>
+      return INVALID;
+    }
 
-            t_eventfd::t_value value = 1;
-            eventfd_.write(err, value);
-          }
-        %>
-      }
+    t_validity post(t_err& err, t_user user, t_any&& any) noexcept {
+      <% auto scope = lock_.make_locked_scope(err);
+        if (scope == VALID && any != any_) {
+          user_    = user;
+          any_     = std::move(any);
+          changed_ = true;
+
+          t_eventfd::t_value value = 1;
+          eventfd_.write(err, value);
+        }
+      %>
       return !err ? VALID : INVALID;
     }
 
@@ -97,6 +106,11 @@ namespace notify_change
     }
 
     t_client make_client(t_user user) noexcept {
+      // NOTE: future, we have information on clients.
+      return {this, user};
+    }
+
+    t_client make_client(t_err&, t_user user) noexcept {
       // NOTE: future, we have information on clients.
       return {this, user};
     }
@@ -111,9 +125,15 @@ namespace notify_change
 
 ///////////////////////////////////////////////////////////////////////////////
 
+  t_validity t_client::post(t_any&& any) noexcept {
+    if (impl_)
+      return impl_->post(user_, std::move(any));
+    return INVALID;
+  }
+
   t_validity t_client::post(t_err err, t_any&& any) noexcept {
     T_ERR_GUARD(err) {
-      if (impl_)
+      if (impl_ && *impl_ == VALID)
         return impl_->post(err, user_, std::move(any));
       err = E_XXX;
     }
@@ -147,10 +167,19 @@ namespace notify_change
     return {};
   }
 
+  t_client t_processor::make_client(t_err err, t_user user) noexcept {
+    T_ERR_GUARD(err) {
+      if (impl_ && *impl_ == VALID)
+        return impl_->make_client(err, user);
+      err = E_XXX;
+    }
+    return {};
+  }
+
   t_validity t_processor::process(t_err err, t_logic& logic,
                                   t_n max) noexcept {
     T_ERR_GUARD(err) {
-      if (impl_)
+      if (impl_ && *impl_ == VALID)
         return impl_->process(err, logic, max);
       err = E_XXX;
     }

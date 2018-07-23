@@ -58,7 +58,7 @@ namespace condvar_event
       return cnt;
     }
 
-    t_validity process(t_err err, t_logic& logic, t_n max) noexcept {
+    t_validity process(t_err& err, t_logic& logic, t_n max) noexcept {
       for (t_n_ n = get(max); !err && n; --n) {
         t_cnt cnt{0};
         <% auto scope = lock_.make_locked_scope(err);

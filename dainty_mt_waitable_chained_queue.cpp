@@ -59,7 +59,7 @@ namespace waitable_chained_queue
               cond_    == VALID) ? VALID : INVALID;
     }
 
-    t_validity process(t_err err, t_logic& logic, t_n max) noexcept {
+    t_validity process(t_err& err, t_logic& logic, t_n max) noexcept {
       T_ERR_GUARD(err) {
         for (t_n_ n = get(max); !err && n; --n) {
           t_eventfd::t_value value = 0;

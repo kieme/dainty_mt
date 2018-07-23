@@ -57,7 +57,7 @@ namespace chained_queue
               lock2_   == VALID) ? VALID : INVALID;
     }
 
-    t_validity process(t_err err, t_logic& logic, t_n max) noexcept {
+    t_validity process(t_err& err, t_logic& logic, t_n max) noexcept {
       for (t_n_ n = get(max); !err && n; --n) {
         t_eventfd::t_value value = 0;
         if (eventfd_.read(err, value) == VALID) {

@@ -49,7 +49,7 @@ namespace notify_change
       return (lock_ == VALID && cond_ == VALID) ? VALID : INVALID;
     }
 
-    t_validity process(t_err err, t_logic& logic, t_n max) noexcept {
+    t_validity process(t_err& err, t_logic& logic, t_n max) noexcept {
       for (t_n_ n = get(max); !err && n; --n) {
         t_any  any;
         t_user user;

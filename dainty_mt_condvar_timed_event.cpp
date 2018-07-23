@@ -58,7 +58,7 @@ namespace condvar_timed_event
       return cnt;
     }
 
-    t_validity process(t_err err, t_logic& logic, r_ctime time,
+    t_validity process(t_err& err, t_logic& logic, r_ctime time,
                        t_n max) noexcept {
       for (t_n_ n = get(max); !err && n; --n) {
         t_cnt cnt{0};
