@@ -60,34 +60,51 @@ namespace waitable_chained_queue
     }
 
     t_validity process(t_err& err, t_logic& logic, t_n max) noexcept {
-      T_ERR_GUARD(err) {
-        for (t_n_ n = get(max); !err && n; --n) {
-          t_eventfd::t_value value = 0;
-          if (eventfd_.read(err, value) == VALID) {
-            t_chain chain;
-            <% auto scope = lock2_.make_locked_scope(err);
-              if (scope == VALID)
-                chain = queue_.remove(err);
+      for (t_n_ n = get(max); !err && n; --n) {
+        t_eventfd::t_value value = 0;
+        if (eventfd_.read(err, value) == VALID) {
+          t_chain chain;
+          <% auto scope = lock2_.make_locked_scope(err);
+            if (scope == VALID)
+              chain = queue_.remove(err);
+          %>
+          if (get(chain.cnt)) {
+            logic.async_process(chain);
+            <% auto scope = lock1_.make_locked_scope(err);
+              if (scope == VALID) {
+                queue_.release(err, chain);
+                if (waiting_)
+                  cond_.broadcast(err);
+              }
             %>
-            if (get(chain.cnt)) {
-              logic.async_process(chain);
-              <% auto scope = lock1_.make_locked_scope(err);
-                if (scope == VALID) {
-                  queue_.release(err, chain);
-                  if (waiting_)
-                    cond_.broadcast(err);
-                }
-              %>
-            }
           }
         }
       }
       return !err ? VALID : INVALID;
     }
 
+    t_chain waitable_acquire(t_user) noexcept {
+      <% auto scope = lock1_.make_locked_scope();
+        if (scope == VALID) {
+          t_chain chain;
+          ++waiting_;
+          do {
+            chain = queue_.acquire(t_n{1});
+            if (!get(chain.cnt) && cond_.wait(lock1_)) {
+              --waiting_;
+              return {};
+            }
+          } while (get(chain.cnt));
+          --waiting_;
+          return chain;
+        }
+      %>
+      return {};
+    }
+
     t_chain waitable_acquire(t_err& err, t_user) noexcept {
-      T_ERR_GUARD(err) {
-        <% auto scope = lock1_.make_locked_scope(err);
+      <% auto scope = lock1_.make_locked_scope(err);
+        if (scope == VALID) {
           t_chain chain;
           ++waiting_;
           do {
@@ -96,35 +113,59 @@ namespace waitable_chained_queue
               cond_.wait(err, lock1_);
           } while (!err && !get(chain.cnt));
           --waiting_;
-        %>
-      }
+          return chain;
+        }
+      %>
+      return {};
+    }
+
+    t_chain acquire(t_user, t_n n) noexcept {
+      <% auto scope = lock1_.make_locked_scope();
+        if (scope == VALID)
+          return queue_.acquire(n);
+      %>
       return {};
     }
 
     t_chain acquire(t_err& err, t_user, t_n n) noexcept {
-      T_ERR_GUARD(err) {
-        <% auto scope = lock1_.make_locked_scope(err);
-          return queue_.acquire(err, n);
-        %>
-      }
+      <% auto scope = lock1_.make_locked_scope(err);
+        return queue_.acquire(err, n);
+      %>
       return {};
     }
 
-    t_validity insert(t_err& err, t_user, t_chain& chain) noexcept {
-      T_ERR_GUARD(err) {
-        if (get(chain.cnt)) {
-          t_bool send = false;
-          <% auto scope = lock2_.make_locked_scope(err);
+    t_validity insert(t_user, t_chain& chain) noexcept {
+      if (get(chain.cnt)) {
+        t_bool send = false;
+        <% auto scope = lock2_.make_locked_scope();
+          if (scope == VALID) {
             send = queue_.is_empty();
             queue_.insert(err, chain);
-          %>
-          if (send) {
-            t_eventfd::t_value value = 1;
-            eventfd_.write(err, value);
-          }
-        } else
-          err = E_XXX;
+          } else
+            return INVALID;
+        %>
+        if (send) {
+          t_eventfd::t_value value = 1;
+          return eventfd_.write(value);
+        }
+        return VALID;
       }
+      return INVALID;
+    }
+
+    t_validity insert(t_err& err, t_user, t_chain& chain) noexcept {
+      if (get(chain.cnt)) {
+        t_bool send = false;
+        <% auto scope = lock2_.make_locked_scope(err);
+          send = queue_.is_empty();
+          queue_.insert(err, chain);
+        %>
+        if (send) {
+          t_eventfd::t_value value = 1;
+          eventfd_.write(err, value);
+        }
+      } else
+        err = E_XXX;
       return !err ? VALID : INVALID;
     }
 
@@ -133,6 +174,11 @@ namespace waitable_chained_queue
     }
 
     t_client make_client(t_user user) noexcept {
+      // NOTE: future, we have information on clients.
+      return {this, user};
+    }
+
+    t_client make_client(t_err&, t_user user) noexcept {
       // NOTE: future, we have information on clients.
       return {this, user};
     }
@@ -148,27 +194,45 @@ namespace waitable_chained_queue
 
 ///////////////////////////////////////////////////////////////////////////////
 
+  t_client::t_chain t_client::waitable_acquire() noexcept {
+    if (impl_)
+      return impl_->waitable_acquire(user_);
+    return {};
+  }
+
   t_client::t_chain t_client::waitable_acquire(t_err err) noexcept {
     T_ERR_GUARD(err) {
-      if (impl_)
+      if (impl_ && *impl_ == VALID)
         return impl_->waitable_acquire(err, user_);
       err = E_XXX;
     }
     return {};
   }
 
+  t_client::t_chain t_client::acquire(t_n cnt) noexcept {
+    if (impl_)
+      return impl_->acquire(user_, cnt);
+    return {};
+  }
+
   t_client::t_chain t_client::acquire(t_err err, t_n cnt) noexcept {
     T_ERR_GUARD(err) {
-      if (impl_)
+      if (impl_ && *impl_ == VALID)
         return impl_->acquire(err, user_, cnt);
       err = E_XXX;
     }
     return {};
   }
 
+  t_validity t_client::insert(t_chain chain) noexcept {
+    if (impl_)
+      return impl_->insert(user_, chain);
+    return INVALID;
+  }
+
   t_validity t_client::insert(t_err err, t_chain chain) noexcept {
     T_ERR_GUARD(err) {
-      if (impl_)
+      if (impl_ && *impl_ == VALID)
         return impl_->insert(err, user_, chain);
       err = E_XXX;
     }
@@ -202,10 +266,19 @@ namespace waitable_chained_queue
     return {};
   }
 
+  t_client t_processor::make_client(t_err err, t_user user) noexcept {
+    T_ERR_GUARD(err) {
+      if (impl_ && *impl_ == VALID)
+        return impl_->make_client(err, user);
+      err = E_XXX;
+    }
+    return {};
+  }
+
   t_validity t_processor::process(t_err err, t_logic& logic,
                                   t_n max) noexcept {
     T_ERR_GUARD(err) {
-      if (impl_)
+      if (impl_ && *impl_ == VALID)
         return impl_->process(err, logic, max);
       err = E_XXX;
     }
