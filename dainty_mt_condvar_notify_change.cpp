@@ -81,7 +81,7 @@ namespace notify_change
           return VALID;
         }
       %>
-      return !err ? VALID : INVALID;
+      return INVALID;
     }
 
     t_validity post(t_err& err, t_user user, t_any&& any) noexcept {
