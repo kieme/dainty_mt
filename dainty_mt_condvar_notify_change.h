@@ -60,6 +60,7 @@ namespace condvar_notify_change
 
     operator t_validity() const noexcept;
 
+    t_validity post(       t_any&&) noexcept;
     t_validity post(t_err, t_any&&) noexcept;
 
   private:
@@ -100,7 +101,8 @@ namespace condvar_notify_change
 
     t_validity process(t_err, r_logic, t_n max = t_n{1}) noexcept;
 
-    t_client make_client(t_user) noexcept;
+    t_client make_client(       t_user) noexcept;
+    t_client make_client(t_err, t_user) noexcept;
 
   private:
     t_impl_* impl_ = nullptr;
