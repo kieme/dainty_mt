@@ -66,7 +66,10 @@ namespace chained_queue
 
     operator t_validity() const noexcept;
 
+    t_chain    acquire(       t_n = t_n{1}) noexcept;
     t_chain    acquire(t_err, t_n = t_n{1}) noexcept;
+
+    t_validity insert (       t_chain)      noexcept;
     t_validity insert (t_err, t_chain)      noexcept;
 
   private:
@@ -108,7 +111,8 @@ namespace chained_queue
 
     t_validity process(t_err, r_logic, t_n max = t_n{1}) noexcept;
 
-    t_client make_client(t_user) noexcept;
+    t_client make_client(       t_user) noexcept;
+    t_client make_client(t_err, t_user) noexcept;
 
   private:
     t_impl_* impl_ = nullptr;

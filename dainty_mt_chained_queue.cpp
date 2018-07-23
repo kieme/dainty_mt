@@ -80,6 +80,14 @@ namespace chained_queue
       return !err ? VALID : INVALID;
     }
 
+    t_chain acquire(t_user, t_n n) noexcept {
+      <% auto scope = lock1_.make_locked_scope();
+        if (scope == VALID)
+          return queue_.acquire(n);
+      %>
+      return {};
+    }
+
     t_chain acquire(t_err& err, t_user, t_n n) noexcept {
       T_ERR_GUARD(err) {
         <% auto scope = lock1_.make_locked_scope(err);
@@ -87,6 +95,24 @@ namespace chained_queue
         %>
       }
       return {};
+    }
+
+    t_validity insert(t_user, t_chain& chain) noexcept {
+      if (get(chain.cnt)) {
+        t_bool send = false;
+        <% auto scope = lock2_.make_locked_scope();
+          if (scope == VALID) {
+            send = queue_.is_empty();
+            queue_.insert(chain);
+          }
+        %>
+        if (send) {
+          t_eventfd::t_value value = 1;
+          return eventfd_.write(value);
+        }
+        return VALID;
+      }
+      return INVALID;
     }
 
     t_validity insert(t_err& err, t_user, t_chain& chain) noexcept {
@@ -116,6 +142,11 @@ namespace chained_queue
       return {this, user};
     }
 
+    t_client make_client(t_err& err, t_user user) noexcept {
+      // NOTE: future, we have information on clients.
+      return {this, user};
+    }
+
   private:
     t_queue      queue_;
     t_eventfd    eventfd_;
@@ -125,6 +156,12 @@ namespace chained_queue
 
 ///////////////////////////////////////////////////////////////////////////////
 
+  t_client::t_chain t_client::acquire(t_n cnt) noexcept {
+    if (impl_)
+      return impl_->acquire(user_, cnt);
+    return {};
+  }
+
   t_client::t_chain t_client::acquire(t_err err, t_n cnt) noexcept {
     T_ERR_GUARD(err) {
       if (impl_)
@@ -132,6 +169,12 @@ namespace chained_queue
       err = E_XXX;
     }
     return {};
+  }
+
+  t_validity t_client::insert(t_chain chain) noexcept {
+    if (impl_)
+      return impl_->insert(user_, chain);
+    return INVALID;
   }
 
   t_validity t_client::insert(t_err err, t_chain chain) noexcept {
@@ -167,6 +210,12 @@ namespace chained_queue
   t_client t_processor::make_client(t_user user) noexcept {
     if (impl_)
       return impl_->make_client(user);
+    return {};
+  }
+
+  t_client t_processor::make_client(t_err err, t_user user) noexcept {
+    if (impl_)
+      return impl_->make_client(err, user);
     return {};
   }
 
