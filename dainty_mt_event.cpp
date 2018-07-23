@@ -42,7 +42,7 @@ namespace event
   public:
     using t_logic = t_processor::t_logic;
 
-    t_impl_(t_err err) noexcept : eventfd_(err, t_n{0}) {
+    t_impl_(t_err& err) noexcept : eventfd_(err, t_n{0}) {
     }
 
     operator t_validity() const noexcept {

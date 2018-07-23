@@ -42,7 +42,7 @@ namespace condvar_event
   public:
     using t_logic = t_processor::t_logic;
 
-    t_impl_(t_err err) noexcept : lock_{err}, cond_{err} {
+    t_impl_(t_err& err) noexcept : lock_{err}, cond_{err} {
     }
 
     operator t_validity() const noexcept {

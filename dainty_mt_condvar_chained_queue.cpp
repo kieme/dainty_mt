@@ -45,18 +45,18 @@ namespace condvar_chained_queue
     using t_chain = t_queue::t_chain;
     using t_logic = t_processor::t_logic;
 
-    t_impl_(t_err err, t_n max) noexcept :
+    t_impl_(t_err& err, t_n max) noexcept :
       queue_{max}, cond_{err}, lock1_{err}, lock2_{err} {
     }
 
     operator t_validity() const noexcept {
-      return (queue_   == VALID &&
-              cond_    == VALID &&
-              lock1_   == VALID &&
-              lock2_   == VALID) ? VALID : INVALID;
+      return (queue_ == VALID &&
+              cond_  == VALID &&
+              lock1_ == VALID &&
+              lock2_ == VALID) ? VALID : INVALID;
     }
 
-    t_validity process(t_err err, t_logic& logic, t_n max) noexcept {
+    t_validity process(t_err& err, t_logic& logic, t_n max) noexcept {
       for (t_n_ n = get(max); !err && n; --n) {
         t_chain chain;
         <% auto scope = lock2_.make_locked_scope(err);
@@ -92,15 +92,15 @@ namespace condvar_chained_queue
     t_validity insert(t_user, t_chain& chain) noexcept {
       if (get(chain.cnt)) {
         t_bool send = false;
-        <% auto scope = lock2_.make_locked_scope(); //XXX - bug
+        <% auto scope = lock2_.make_locked_scope();
           if (scope == VALID) {
             send = queue_.is_empty();
             queue_.insert(chain);
-          }
-        %>
-        if (send)
-          if (cond_.signal())
+          } else
             return INVALID;
+        %>
+        if (send && cond_.signal())
+          return INVALID;
         return VALID;
       }
       return INVALID;

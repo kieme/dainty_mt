@@ -42,7 +42,7 @@ namespace condvar_command
   public:
     using t_logic = t_processor::t_logic;
 
-    t_impl_(t_err err) noexcept
+    t_impl_(t_err& err) noexcept
       : cmdlock_(err), lock_(err), reqcond_(err), ackcond_(err) {
     }
 

@@ -41,7 +41,7 @@ namespace notify_change
   public:
     using t_logic = t_processor::t_logic;
 
-    t_impl_(t_err err, t_any&& any) noexcept
+    t_impl_(t_err& err, t_any&& any) noexcept
       : lock_(err), cond_(err), any_(std::move(any)) {
     }
 

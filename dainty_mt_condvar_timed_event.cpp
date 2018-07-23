@@ -43,7 +43,7 @@ namespace condvar_timed_event
     using t_logic = t_processor::t_logic;
     using r_ctime = t_processor::r_ctime;
 
-    t_impl_(t_err err) noexcept : lock_{err}, cond_{err} {
+    t_impl_(t_err& err) noexcept : lock_{err}, cond_{err} {
     }
 
     operator t_validity() const noexcept {

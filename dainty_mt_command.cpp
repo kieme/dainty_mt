@@ -42,7 +42,7 @@ namespace command
   public:
     using t_logic = t_processor::t_logic;
 
-    t_impl_(t_err err) noexcept
+    t_impl_(t_err& err) noexcept
       : cmdlock_(err), condlock_(err), cond_(err), eventfd_(err, t_n{0}) {
     }
 

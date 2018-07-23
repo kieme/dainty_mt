@@ -46,7 +46,7 @@ namespace waitable_chained_queue
     using t_chain = t_queue::t_chain;
     using t_logic = t_processor::t_logic;
 
-    t_impl_(t_err err, t_n max) noexcept
+    t_impl_(t_err& err, t_n max) noexcept
       : queue_{max}, eventfd_(err, t_n{0}), lock1_{err}, lock2_{err},
         cond_{err} {
     }
