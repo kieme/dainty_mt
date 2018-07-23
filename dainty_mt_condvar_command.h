@@ -70,7 +70,10 @@ namespace condvar_command
 
     operator t_validity() const noexcept;
 
+    t_validity       request(       t_command&) noexcept;
     t_validity       request(t_err, t_command&) noexcept;
+
+    t_validity async_request(       t_command*) noexcept;
     t_validity async_request(t_err, t_command*) noexcept;
 
   private:
@@ -115,7 +118,8 @@ namespace condvar_command
 
     t_validity process(t_err, r_logic, t_n max = t_n{1}) noexcept;
 
-    t_client make_client(t_user) noexcept;
+    t_client make_client(       t_user) noexcept;
+    t_client make_client(t_err, t_user) noexcept;
 
   private:
     t_impl_* impl_ = nullptr;
