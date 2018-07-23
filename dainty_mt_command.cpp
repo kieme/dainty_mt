@@ -79,6 +79,33 @@ namespace command
       return !err ? VALID : INVALID;
     }
 
+    t_validity request(t_user user, t_command& cmd) noexcept {
+      <% auto scope = cmdlock_.make_locked_scope();
+        if (scope == VALID) {
+          t_eventfd::t_value value = 1;
+          if (eventfd_.write(value) == VALID) {
+            <% auto scope = condlock_.make_locked_scope();
+              if (scope == VALID) {
+                user_  = user;
+                cmd_   = &cmd;
+                async_ = false;
+                wait_  = true;
+                do {
+                  if (cond_.wait(condlock_)) {
+                    wait_ = false;
+                    return INVALID;
+                  }
+                } while (cmd_);
+                wait_  = false;
+                return VALID;
+              }
+            %>
+          }
+        }
+      %>
+      return INVALID;
+    }
+
     t_validity request(t_err& err, t_user user, t_command& cmd) noexcept {
       T_ERR_GUARD(err) {
         <% auto scope = cmdlock_.make_locked_scope(err);
@@ -91,8 +118,7 @@ namespace command
                   cmd_   = &cmd;
                   async_ = false;
                   wait_  = true;
-                  while (!err && cmd_)
-                    cond_.wait(err, condlock_);
+                  while (cond_.wait(err, condlock_) == VALID && cmd_);
                   wait_  = false;
                 }
               %>
@@ -101,6 +127,29 @@ namespace command
         %>
       }
       return !err ? VALID : INVALID;
+    }
+
+    t_validity async_request(t_user user, t_command* cmd) noexcept {
+      <% auto scope = cmdlock_.make_locked_scope();
+        if (scope == VALID) {
+          t_eventfd::t_value value = 1;
+          if (eventfd_.write(value) == VALID) {
+            <% auto scope = condlock_.make_locked_scope();
+              if (scope == VALID) {
+                user_  = user;
+                cmd_   = cmd;
+                async_ = true;
+                do {
+                  if (cond_.wait(condlock_))
+                    return INVALID;
+                } while (cmd_);
+                return VALID;
+              }
+            %>
+          }
+        }
+      %>
+      return INVALID;
     }
 
     t_validity async_request(t_err& err, t_user user,
@@ -115,8 +164,7 @@ namespace command
                   user_  = user;
                   cmd_   = cmd;
                   async_ = true;
-                  while (!err && cmd_)
-                    cond_.wait(err, condlock_);
+                  while (cond_.wait(err, condlock_) == VALID && cmd_);
                 }
               %>
             }
@@ -135,6 +183,14 @@ namespace command
       return {this, user};
     }
 
+    t_client make_client(t_err& err, t_user user) noexcept {
+      T_ERR_GUARD(err) {
+        // NOTE: future, we have information on clients.
+        return {this, user};
+      }
+      return {};
+    }
+
   private:
     t_mutex_lock cmdlock_;
     t_mutex_lock condlock_;
@@ -148,12 +204,24 @@ namespace command
 
 ///////////////////////////////////////////////////////////////////////////////
 
+  t_validity t_client::request(t_command& cmd) noexcept {
+    if (impl_)
+      return impl_->request(user_, cmd);
+    return INVALID;
+  }
+
   t_validity t_client::request(t_err err, t_command& cmd) noexcept {
     T_ERR_GUARD(err) {
       if (impl_)
         return impl_->request(err, user_, cmd);
       err = E_XXX;
     }
+    return INVALID;
+  }
+
+  t_validity t_client::async_request(t_command* cmd) noexcept {
+    if (impl_)
+      return impl_->async_request(user_, cmd);
     return INVALID;
   }
 
@@ -190,6 +258,15 @@ namespace command
   t_client t_processor::make_client(t_user user) noexcept {
     if (impl_)
       return impl_->make_client(user);
+    return {};
+  }
+
+  t_client t_processor::make_client(t_err err, t_user user) noexcept {
+    T_ERR_GUARD(err) {
+      if (impl_)
+        return impl_->make_client(err, user);
+      err = E_XXX;
+    }
     return {};
   }
 
