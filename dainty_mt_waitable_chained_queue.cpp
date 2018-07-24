@@ -140,7 +140,7 @@ namespace waitable_chained_queue
         <% auto scope = lock2_.make_locked_scope();
           if (scope == VALID) {
             send = queue_.is_empty();
-            queue_.insert(err, chain);
+            queue_.insert(chain);
           } else
             return INVALID;
         %>
