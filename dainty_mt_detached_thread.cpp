@@ -68,7 +68,6 @@ namespace detached_thread
       t_bool  del_logic = data->del_logic_;
 
       t_pthread::set_name(err, t_pthread::get_self(), data->name_);
-      logic->prepare(err);
       <% auto scope = data->lock_.make_locked_scope(err);
         data->ready_ = logic->prepare(err) == VALID;
       %>
