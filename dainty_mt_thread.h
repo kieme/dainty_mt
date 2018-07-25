@@ -76,7 +76,7 @@ namespace thread
     t_validity join(t_err, p_void&) noexcept;
 
   private:
-    os::threading::t_pthread thread_;
+    os::threading::t_thread thread_;
   };
 
 ///////////////////////////////////////////////////////////////////////////////

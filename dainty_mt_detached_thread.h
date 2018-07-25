@@ -68,7 +68,7 @@ namespace detached_thread
     t_thread& operator=(t_thread&&)      = delete;
 
   private:
-    os::threading::t_pthread thread_;
+    os::threading::t_thread thread_;
   };
 
 ///////////////////////////////////////////////////////////////////////////////

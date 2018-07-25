@@ -31,8 +31,9 @@ namespace dainty
 {
 namespace mt
 {
-namespace notify_change
+namespace condvar_notify_change
 {
+  using named::t_n_;
   using namespace dainty::os::threading;
 
 ///////////////////////////////////////////////////////////////////////////////

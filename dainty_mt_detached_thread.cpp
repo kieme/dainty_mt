@@ -36,7 +36,9 @@ namespace mt
 namespace detached_thread
 {
   using namespace dainty::os;
-  using namespace dainty::os::threading;
+  using dainty::os::threading::t_mutex_lock;
+  using dainty::os::threading::t_cond_var;
+  using t_os_thread = dainty::os::threading::t_thread;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -67,7 +69,7 @@ namespace detached_thread
       p_logic logic     = reinterpret_cast<p_logic>(data->logic_);
       t_bool  del_logic = data->del_logic_;
 
-      t_pthread::set_name(err, t_pthread::get_self(), data->name_);
+      t_os_thread::set_name(err, t_os_thread::get_self(), data->name_);
       <% auto scope = data->lock_.make_locked_scope(err);
         data->ready_ = logic->prepare(err) == VALID;
       %>

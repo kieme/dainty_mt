@@ -80,8 +80,8 @@ namespace condvar_notify_change
   public:
     class t_logic {
     public:
-      using t_user = notify_change::t_user;
-      using t_any  = notify_change::t_any;
+      using t_user = condvar_notify_change::t_user;
+      using t_any  = condvar_notify_change::t_any;
 
       virtual ~t_logic() { }
       virtual t_void process(t_user, t_any&&) noexcept = 0;
