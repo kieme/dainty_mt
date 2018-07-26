@@ -41,7 +41,8 @@ namespace condvar_timed_event
   class t_impl_ {
   public:
     using t_logic = t_processor::t_logic;
-    using r_ctime = t_processor::r_ctime;
+    using r_logic = t_processor::r_logic;
+    using R_time  = t_processor::R_time;
 
     t_impl_(t_err& err) noexcept : lock_{err}, cond_{err} {
     }
@@ -50,7 +51,7 @@ namespace condvar_timed_event
       return (lock_ == VALID && cond_ == VALID) ?  VALID : INVALID;
     }
 
-    t_cnt get_cnt(t_err err) {
+    t_cnt get_cnt(t_err& err) {
       t_cnt cnt{0};
       <% auto scope = lock_.make_locked_scope(err);
         set(cnt) = cnt_;
@@ -58,7 +59,7 @@ namespace condvar_timed_event
       return cnt;
     }
 
-    t_validity process(t_err& err, t_logic& logic, r_ctime time,
+    t_validity process(t_err& err, r_logic logic, R_time time,
                        t_n max) noexcept {
       for (t_n_ n = get(max); !err && n; --n) {
         t_cnt cnt{0};
@@ -83,7 +84,7 @@ namespace condvar_timed_event
       return !err ? VALID : INVALID;
     }
 
-    t_validity reset_then_process(t_err err, t_logic& logic, r_ctime time,
+    t_validity reset_then_process(t_err err, r_logic logic, R_time time,
                                   t_n max) noexcept {
       for (t_n_ n = get(max); !err && n; --n) {
         t_cnt cnt{0};
@@ -210,7 +211,7 @@ namespace condvar_timed_event
     return {};
   }
 
-  t_validity t_processor::process(t_err err, t_logic& logic, r_ctime time,
+  t_validity t_processor::process(t_err err, r_logic logic, R_time time,
                                   t_n max) noexcept {
     T_ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
@@ -220,8 +221,8 @@ namespace condvar_timed_event
     return INVALID;
   }
 
-  t_validity t_processor::reset_then_process(t_err err, t_logic& logic,
-                                             r_ctime time, t_n max) noexcept {
+  t_validity t_processor::reset_then_process(t_err err, r_logic logic,
+                                             R_time time, t_n max) noexcept {
     T_ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->reset_then_process(err, logic, time, max);

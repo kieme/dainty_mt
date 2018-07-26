@@ -55,6 +55,9 @@ namespace condvar_timed_event
 ///////////////////////////////////////////////////////////////////////////////
 
   class t_impl_;
+  using p_impl_ = named::t_prefix<t_impl_>::p_;
+
+///////////////////////////////////////////////////////////////////////////////
 
   class t_client {
   public:
@@ -85,18 +88,18 @@ namespace condvar_timed_event
   public:
     class t_logic {
     public:
-      using t_err   = oops::t_oops<>;
-      using t_cnt   = condvar_timed_event::t_cnt;
-      using t_time  = condvar_timed_event::t_time;
-      using r_ctime = const t_time&;
+      using t_err  = oops::t_oops<>;
+      using t_cnt  = condvar_timed_event::t_cnt;
+      using t_time = named::t_prefix<condvar_timed_event::t_time>::t_;
+      using R_time = named::t_prefix<condvar_timed_event::t_time>::R_;
 
       virtual ~t_logic() { }
       virtual t_void async_process  (t_cnt)   noexcept = 0;
-      virtual t_void timeout_process(r_ctime) noexcept = 0;
+      virtual t_void timeout_process(R_time) noexcept = 0;
     };
 
-    using r_logic = t_logic&;
-    using r_ctime = t_logic::r_ctime;
+    using r_logic = named::t_prefix<t_logic>::r_;
+    using R_time  = t_logic::R_time;
 
      t_processor(t_err)         noexcept;
      t_processor(t_processor&&) noexcept;
@@ -109,9 +112,9 @@ namespace condvar_timed_event
     operator t_validity () const noexcept;
     t_cnt    get_cnt(t_err);
 
-    t_validity            process(t_err, r_logic, r_ctime,
+    t_validity            process(t_err, r_logic, R_time,
                                   t_n max = t_n{1}) noexcept;
-    t_validity reset_then_process(t_err, r_logic, r_ctime,
+    t_validity reset_then_process(t_err, r_logic, R_time,
                                   t_n max = t_n{1}) noexcept;
 
     t_client make_client(       t_user) noexcept;

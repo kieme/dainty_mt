@@ -95,16 +95,16 @@ namespace condvar_command
     public:
       using t_err     = oops::t_oops<>;
       using t_user    = condvar_command::t_user;
-      using t_command = condvar_command::t_command;
-      using p_command = t_command*;
-      using r_command = t_command&;
+      using t_command = named::t_prefix<condvar_command::t_command>::t_;
+      using p_command = named::t_prefix<condvar_command::t_command>::p_;
+      using r_command = named::t_prefix<condvar_command::t_command>::r_;
 
       virtual ~t_logic() { }
       virtual t_void       process(t_err, t_user, r_command) noexcept = 0;
       virtual t_void async_process(       t_user, p_command) noexcept = 0;
     };
 
-    using r_logic = t_logic&;
+    using r_logic = named::t_prefix<t_logic>::r_;
 
      t_processor(t_err)         noexcept;
      t_processor(t_processor&&) noexcept;

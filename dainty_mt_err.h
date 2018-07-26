@@ -34,12 +34,13 @@ namespace dainty
 namespace mt
 {
   enum t_err_codes {
-    E_XXX // add destription later
+    E_XXX  = 1
   };
 
   oops::t_def err_what(oops::t_id);
 
   using t_err = oops::t_oops<err_what, t_err_codes>;
+  using r_err = named::t_prefix<t_err>::r_;
 }
 }
 

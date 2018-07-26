@@ -46,14 +46,14 @@ namespace thread
   {
     struct t_data_ {
       t_err        err_;
-      p_cstr       name_;
+      P_cstr       name_;
       p_void       logic_;
       t_bool       del_logic_;
       t_bool       ready_;
       t_mutex_lock lock_;
       t_cond_var   cond_;
 
-      t_data_(t_err err, p_cstr name, p_void logic, t_bool del_logic) noexcept
+      t_data_(t_err err, P_cstr name, p_void logic, t_bool del_logic) noexcept
         : err_(err), name_(name), logic_(logic), del_logic_(del_logic),
           ready_(false) {
       }
@@ -114,7 +114,7 @@ namespace thread
   }
 
   t_thread::t_thread(t_err   err,
-                     p_cstr  name,
+                     P_cstr  name,
                      p_logic logic,
                      t_bool  del_logic) noexcept {
     T_ERR_GUARD(err) {

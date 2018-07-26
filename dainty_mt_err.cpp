@@ -33,7 +33,7 @@ namespace mt
   namespace
   {
     using namespace oops;
-    using named::p_cstr;
+    using named::P_cstr;
 
     const t_def err_tbl_[] = {
       /* CATEGORY                 MESSAGE               NEXT CODE      */

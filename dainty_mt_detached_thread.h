@@ -39,7 +39,7 @@ namespace detached_thread
   using named::t_void;
   using named::p_void;
   using named::t_bool;
-  using named::p_cstr;
+  using named::P_cstr;
   using named::t_validity;
   using named::VALID;
   using named::INVALID;
@@ -58,9 +58,9 @@ namespace detached_thread
       virtual t_void     run    ()                         noexcept = 0;
     };
 
-    using p_logic = t_logic*;
+    using p_logic = named::t_prefix<t_logic>::p_;
 
-    t_thread(t_err, p_cstr name, p_logic, t_bool del_logic) noexcept;
+    t_thread(t_err, P_cstr name, p_logic, t_bool del_logic) noexcept;
 
     t_thread(const t_thread&)            = delete;
     t_thread(t_thread&&)                 = delete;
