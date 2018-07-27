@@ -160,28 +160,25 @@ namespace event_dispatcher
 
 ///////////////////////////////////////////////////////////////////////////////
 
-
-  class t_logic {
-  public:
-    virtual ~t_logic() { }
-
-    virtual t_void may_reorder_events (r_event_infos)  = 0;
-    virtual t_void notify_event_remove(r_event_info)   = 0;
-    virtual t_quit notify_timeout     (t_microseconds) = 0;
-    virtual t_quit notify_error       (t_errno)        = 0;
-  };
-
-  using p_logic = named::t_prefix<t_logic>::p_;
-
-///////////////////////////////////////////////////////////////////////////////
-
   class t_impl_;
   using p_impl_ = named::t_prefix<t_impl_>::p_;
 
-  class t_dispatcher : private t_logic {
+  class t_dispatcher {
   public:
-    t_dispatcher(       R_params);
-    t_dispatcher(t_err, R_params);
+    class t_logic {
+    public:
+      virtual ~t_logic() { }
+
+      virtual t_void may_reorder_events (r_event_infos)  = 0;
+      virtual t_void notify_event_remove(r_event_info)   = 0;
+      virtual t_quit notify_timeout     (t_microseconds) = 0;
+      virtual t_quit notify_error       (t_errno)        = 0;
+    };
+
+    using p_logic = named::t_prefix<t_logic>::p_;
+
+    t_dispatcher(       R_params, p_logic, t_bool = false);
+    t_dispatcher(t_err, R_params, p_logic, t_bool = false);
     t_dispatcher(t_dispatcher&&);
    ~t_dispatcher();
 
@@ -190,10 +187,9 @@ namespace event_dispatcher
     t_dispatcher& operator=(t_dispatcher&&)       = delete;
     t_dispatcher& operator=(const t_dispatcher&)  = delete;
 
-    operator t_validity () const;
-    t_params get_params () const;
-
-    t_void display() const;
+    operator t_validity() const;
+    t_params get_params() const;
+    t_void   display   () const;
 
     t_id         add_event(       t_fd, R_event_params, p_event_hook);
     t_id         add_event(t_err, t_fd, R_event_params, p_event_hook);
@@ -205,8 +201,8 @@ namespace event_dispatcher
     t_void       clear_events();
     t_void       clear_events(t_err);
 
-    P_event_info get_event (       t_id) const;
-    P_event_info get_event (t_err, t_id) const;
+    P_event_info get_event(       t_id) const;
+    P_event_info get_event(t_err, t_id) const;
 
     t_bool       fetch_events(r_ids) const;
 
@@ -217,11 +213,6 @@ namespace event_dispatcher
     t_n event_loop(t_err, t_microseconds);
 
   private:
-    virtual t_void may_reorder_events (r_event_infos)  override;
-    virtual t_void notify_event_remove(r_event_info)   override;
-    virtual t_quit notify_timeout     (t_microseconds) override;
-    virtual t_quit notify_error       (t_errno)        override;
-
     p_impl_ impl_ = nullptr;
   };
 
