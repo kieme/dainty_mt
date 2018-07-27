@@ -27,6 +27,7 @@
 #ifndef _DAINTY_MT_EVENT_DISPATCHER_H_
 #define _DAINTY_MT_EVENT_DISPATCHER_H_
 
+#include <vector>
 #include "dainty_os_fdbased.h"
 #include "dainty_container_freelist.h"
 #include "dainty_named_string.h"
@@ -40,24 +41,40 @@ namespace event_dispatcher
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+  using named::t_void;
+  using named::t_bool;
   using named::t_n;
   using named::t_ix;
   using named::string::t_string;
   using named::string::FMT;
-  using container::freelist::t_id;
+  using named::t_validity;
+  using named::VALID;
+  using named::INVALID;
   using os::t_fd;
+  using os::BAD_FD;
 
-  using t_event_prio = named::t_uchar;
+  using container::freelist::t_id;
+  using t_ids = std::vector<t_id>;
+  using r_ids = named::t_prefix<t_ids>::r_;
+
   enum  t_event_user_tag_ {};
   using t_event_user = named::t_user<t_event_user_tag_>;
+
   enum  t_service_name_tag_ {};
   using t_service_name = t_string<t_service_name_tag_, 20>;
   using R_service_name = named::t_prefix<t_service_name>::R_;
+
   enum  t_hook_name_tag_ {};
   using t_hook_name = t_string<t_hook_name_tag_, 20>;
   using R_hook_name = named::t_prefix<t_hook_name>::R_;
-  enum t_event_type { RX, WR };
-  enum t_cmd        { QUIT_EVENT_LOOP, REMOVE_HOOK, CONTINUE };
+
+  using t_event_prio   = named::t_uchar;
+  using t_microseconds = named::t_uint;
+  using t_quit         = named::t_bool;
+  enum  t_event_type { RD, WR };
+  enum  t_cmd        { QUIT_EVENT_LOOP, REMOVE_EVENT, CONTINUE };
+
+  using t_errno = named::t_uint32; //XXX
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -70,12 +87,32 @@ namespace event_dispatcher
   public:
     const t_event_type type;
     const t_event_prio prio;
-    t_event_user       user;
+          t_event_user user;
 
-    t_event_params(t_event_type, t_event_prio, t_event_user);
+    inline
+    t_event_params(t_event_type _type, t_event_prio _prio, t_event_user _user)
+      : type(_type), prio(_prio), user(_user) {
+    }
   };
 
   using r_event_params = named::t_prefix<t_event_params>::r_;
+  using R_event_params = named::t_prefix<t_event_params>::R_;
+
+///////////////////////////////////////////////////////////////////////////////
+
+  class t_event_hook;
+  using p_event_hook = named::t_prefix<t_event_hook>::p_;
+
+  class t_return {
+  public:
+    t_cmd        cmd;
+    p_event_hook hook;
+
+    inline
+    t_return(t_cmd _cmd = REMOVE_EVENT, p_event_hook _hook = nullptr)
+     : cmd(_cmd), hook(_hook) {
+    }
+  };
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -86,8 +123,6 @@ namespace event_dispatcher
     virtual t_return    notify_event(t_fd, r_event_params) = 0;
   };
 
-  using p_event_hook = named::t_prefix<t_event_hook>::p_;
-
 ///////////////////////////////////////////////////////////////////////////////
 
   class t_event_info {
@@ -96,10 +131,17 @@ namespace event_dispatcher
     p_event_hook   hook;
     t_event_params params;
 
+    inline
     t_event_info(t_fd _fd, p_event_hook _hook, R_event_params _params)
       : fd(_fd), hook(_hook), params(_params) {
     }
   };
+
+  using r_event_info = named::t_prefix<t_event_info>::r_;
+  using P_event_info = named::t_prefix<t_event_info>::P_;
+
+  using t_event_infos = std::vector<t_event_info*>;
+  using r_event_infos = named::t_prefix<t_event_infos>::r_;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -108,6 +150,7 @@ namespace event_dispatcher
     t_n            max;
     t_service_name service_name;
 
+    inline
     t_params(t_n _max, R_service_name _name) : max(_max), service_name(_name) {
     }
   };
@@ -116,29 +159,15 @@ namespace event_dispatcher
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  class t_return {
-  public:
-    t_cmd        cmd;
-    p_event_hook hook;
-
-    t_return(t_cmd cmd = REMOVE_HOOK, p_event_hook _hook = nullptr)
-     : cmd(_cmd), hook(_hook) {
-    }
-  };
-
-///////////////////////////////////////////////////////////////////////////////
 
   class t_logic {
   public:
     virtual ~t_logic() { }
 
-    using container::list::t_list<>;
-
-    virtual t_void order                 (pevents& unordered);
-    virtual t_void notify_events_detected(pevents& ordered) const;
-    virtual t_void notify_event_remove   (r_event_info);
-    virtual t_cmd  notify_timeout        (t_microsecond);
-    virtual t_cmd  notify_error          (t_errno);
+    virtual t_void may_reorder_events (r_event_infos)  = 0;
+    virtual t_void notify_event_remove(r_event_info)   = 0;
+    virtual t_quit notify_timeout     (t_microseconds) = 0;
+    virtual t_quit notify_error       (t_errno)        = 0;
   };
 
   using p_logic = named::t_prefix<t_logic>::p_;
@@ -150,50 +179,49 @@ namespace event_dispatcher
 
   class t_dispatcher : private t_logic {
   public:
-    t_dispatcher(       R_params, p_logic);
-    t_dispatcher(t_err, R_params, p_logic);
+    t_dispatcher(       R_params);
+    t_dispatcher(t_err, R_params);
     t_dispatcher(t_dispatcher&&);
-    t_dispatcher& operator=(t_dispatcher&&);
    ~t_dispatcher();
 
     t_dispatcher()                                = delete;
     t_dispatcher(const t_dispatcher&)             = delete;
+    t_dispatcher& operator=(t_dispatcher&&)       = delete;
     t_dispatcher& operator=(const t_dispatcher&)  = delete;
 
-    t_params get_params() const;
+    operator t_validity () const;
+    t_params get_params () const;
 
-    void show(const pevents&) const;
-    void show() const;
+    t_void display() const;
 
     t_id         add_event(       t_fd, R_event_params, p_event_hook);
     t_id         add_event(t_err, t_fd, R_event_params, p_event_hook);
     p_event_hook del_event(       t_fd);
     p_event_hook del_event(t_err, t_fd);
-    p_event_hook del_event(       R_id);
-    p_event_hook del_event(t_err, R_id);
+    p_event_hook del_event(       t_id);
+    p_event_hook del_event(t_err, t_id);
 
     t_void       clear_events();
     t_void       clear_events(t_err);
 
-    t_n          get_events() const;
-    t_event_info get_event (t_ix) const;
+    P_event_info get_event (       t_id) const;
+    P_event_info get_event (t_err, t_id) const;
 
-    t_void event_loop();
-    t_void event_loop(t_err);
+    t_bool       fetch_events(r_ids) const;
 
-    t_void event_loop(       t_microseconds);
-    t_void event_loop(t_err, t_microseconds);
+    t_validity   event_loop();
+    t_validity   event_loop(t_err);
+
+    t_validity   event_loop(       t_microseconds);
+    t_validity   event_loop(t_err, t_microseconds);
 
   private:
-    t_cmd process_events();
+    virtual t_void may_reorder_events (r_event_infos)  override;
+    virtual t_void notify_event_remove(r_event_info)   override;
+    virtual t_quit notify_timeout     (t_microseconds) override;
+    virtual t_quit notify_error       (t_errno)        override;
 
-    virtual t_void order                 (pevents& unordered);
-    virtual t_void notify_events_detected(pevents& ordered) const;
-    virtual t_void notify_event_remove   (r_event_info);
-    virtual t_cmd  notify_timeout        (t_microseconds);
-    virtual t_cmd  notify_error          (t_errno);
-
-    p_impl impl_;
+    p_impl_ impl_ = nullptr;
   };
 
 ///////////////////////////////////////////////////////////////////////////////
