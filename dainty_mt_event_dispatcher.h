@@ -127,6 +127,7 @@ namespace event_dispatcher
 
   class t_event_info {
   public:
+    t_id           id = t_id{0};
     t_fd           fd;
     p_event_hook   hook;
     t_event_params params;
@@ -209,11 +210,11 @@ namespace event_dispatcher
 
     t_bool       fetch_events(r_ids) const;
 
-    t_validity   event_loop();
-    t_validity   event_loop(t_err);
+    t_n event_loop();
+    t_n event_loop(t_err);
 
-    t_validity   event_loop(       t_microseconds);
-    t_validity   event_loop(t_err, t_microseconds);
+    t_n event_loop(       t_microseconds);
+    t_n event_loop(t_err, t_microseconds);
 
   private:
     virtual t_void may_reorder_events (r_event_infos)  override;
