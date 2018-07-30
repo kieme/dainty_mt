@@ -186,7 +186,6 @@ namespace notify_change
     return INVALID;
   }
 
-  inline
   t_fd t_processor::get_fd() const noexcept {
     if (impl_)
       return impl_->get_fd();
