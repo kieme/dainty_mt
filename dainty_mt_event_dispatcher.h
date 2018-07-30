@@ -106,6 +106,9 @@ namespace event_dispatcher
 
   class t_action {
   public:
+    using t_cmd         = event_dispatcher::t_cmd;
+    using p_event_logic = event_dispatcher::p_event_logic;
+
     t_cmd         cmd;
     p_event_logic next;
 
