@@ -90,20 +90,20 @@ namespace condvar_chained_queue
     }
 
     t_validity insert(t_user, t_chain& chain) noexcept {
+      t_validity validity = INVALID;
       if (get(chain.cnt)) {
         t_bool send = false;
         <% auto scope = lock2_.make_locked_scope();
           if (scope == VALID) {
+            validity = VALID;
             send = queue_.is_empty();
             queue_.insert(chain);
-          } else
-            return INVALID;
+          }
         %>
-        if (send && cond_.signal())
-          return INVALID;
-        return VALID;
+        if (send && validity == VALID && cond_.signal() == INVALID)
+          validity = INVALID;
       }
-      return INVALID;
+      return validity;
     }
 
     t_validity insert(t_err& err, t_user, t_chain& chain) noexcept {

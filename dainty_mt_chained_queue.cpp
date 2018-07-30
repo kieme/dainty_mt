@@ -94,22 +94,21 @@ namespace chained_queue
     }
 
     t_validity insert(t_user, t_chain& chain) noexcept {
+      t_validity validity = INVALID;
       if (get(chain.cnt)) {
         t_bool send = false;
         <% auto scope = lock2_.make_locked_scope();
           if (scope == VALID) {
             send = queue_.is_empty();
             queue_.insert(chain);
-          } else
-            return INVALID;
+          }
         %>
         if (send) {
           t_eventfd::t_value value = 1;
-          return eventfd_.write(value);
+          validity = eventfd_.write(value) == VALID ? VALID : INVALID;
         }
-        return VALID;
       }
-      return INVALID;
+      return validity;
     }
 
     t_validity insert(t_err& err, t_user, t_chain& chain) noexcept {

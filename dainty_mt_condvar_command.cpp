@@ -77,29 +77,28 @@ namespace condvar_command
     }
 
     t_validity request(t_user user, t_command& cmd) noexcept {
+      t_validity validity = INVALID;
       <% auto scope = cmdlock_.make_locked_scope();
         if (scope == VALID) {
           <% auto scope = lock_.make_locked_scope();
             if (scope == VALID) {
-              if (reqcond_.signal() == 0) {
+              if (reqcond_.signal() == VALID) {
                 user_  = user;
                 cmd_   = &cmd;
                 async_ = false;
                 wait_  = true;
                 do {
-                  if (ackcond_.wait(lock_)) {
-                    wait_ = false;
-                    return INVALID;
-                  }
-                } while (cmd_);
+                  validity = INVALID;
+                  if (ackcond_.wait(lock_) == VALID)
+                    validity = VALID;
+                } while (validity == VALID && cmd_);
                 wait_ = false;
-                return VALID;
               }
             }
           %>
         }
       %>
-      return INVALID;
+      return validity;
     }
 
     t_validity request(t_err& err, t_user user, t_command& cmd) noexcept {
@@ -123,25 +122,26 @@ namespace condvar_command
     }
 
     t_validity async_request(t_user user, t_command* cmd) noexcept {
+      t_validity validity = INVALID;
       <% auto scope = cmdlock_.make_locked_scope();
         if (scope == VALID) {
           <% auto scope = lock_.make_locked_scope();
             if (scope == VALID) {
-              if (reqcond_.signal() == 0) {
+              if (reqcond_.signal() == VALID) {
                 user_  = user;
                 cmd_   = cmd;
                 async_ = true;
                 do {
-                  if (ackcond_.wait(lock_))
-                    return INVALID;
-                } while (cmd_);
-                return VALID;
+                  validity = INVALID;
+                  if (ackcond_.wait(lock_) == VALID)
+                    validity = VALID;
+                } while (validity == VALID && cmd_);
               }
             }
           %>
         }
       %>
-      return INVALID;
+      return validity;
     }
 
     t_validity async_request(t_err& err, t_user user,

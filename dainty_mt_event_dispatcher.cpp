@@ -68,14 +68,15 @@ namespace event_dispatcher
 
 ///////////////////////////////////////////////////////////////////////////////
 
-    virtual t_bool  add_event(        r_event_info) = 0;
-    virtual t_bool  add_event(r_err,  r_event_info) = 0;
-    virtual t_bool  del_event(        r_event_info) = 0;
-    virtual t_bool  del_event(r_err,  r_event_info) = 0;
-    virtual t_errno wait_event(       r_events, r_event_infos) = 0;
-    virtual t_errno wait_event(r_err, r_events, r_event_infos) = 0;
-    virtual t_errno wait_event(       r_events, r_event_infos, t_microseconds) = 0;
-    virtual t_errno wait_event(r_err, r_events, r_event_infos, t_microseconds) = 0;
+    virtual t_errn     add_event(        r_event_info) = 0;
+    virtual t_validity add_event(r_err,  r_event_info) = 0;
+    virtual t_errn     del_event(        r_event_info) = 0;
+    virtual t_validity del_event(r_err,  r_event_info) = 0;
+
+    virtual t_validity wait_event(       r_events, r_event_infos) = 0;
+    virtual t_errn     wait_event(r_err, r_events, r_event_infos) = 0;
+    virtual t_validity wait_event(       r_events, r_event_infos, t_microseconds) = 0;
+    virtual t_errn     wait_event(r_err, r_events, r_event_infos, t_microseconds) = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -105,7 +106,7 @@ namespace event_dispatcher
       auto result = events_.insert({logic, params});
       if (result) {
         result.ptr->id = result.id;
-        if (add_event(*result.ptr))
+        if (add_event(*result.ptr) == VALID)
           return result.id;
         events_.erase(result.id);
       }
@@ -116,7 +117,7 @@ namespace event_dispatcher
       auto result = events_.insert(err, {logic, params});
       if (result) {
         result.ptr->id = result.id;
-        if (add_event(err, *result.ptr))
+        if (add_event(err, *result.ptr) == VALID)
           return result.id;
         events_.erase(result.id);
       }
@@ -185,8 +186,8 @@ namespace event_dispatcher
       t_n_ cnt = 0;
       t_quit quit = false;
       do {
-        t_errno errn = wait_event(events_, infos_);
-        if (!errn) {
+        t_errn errn = wait_event(events_, infos_);
+        if (errn == VALID) {
           if (!infos_.empty())
             quit = process_events(infos_, logic);
           else
@@ -203,8 +204,8 @@ namespace event_dispatcher
       t_n_ cnt = 0;
       t_quit quit = false;
       do {
-        t_errno errn = wait_event(err, events_, infos_);
-        if (!errn) {
+        t_errn errn = wait_event(err, events_, infos_);
+        if (errn == VALID) {
           if (!infos_.empty())
             quit = process_events(infos_, logic);
           else
@@ -221,8 +222,8 @@ namespace event_dispatcher
       t_n_ cnt = 0;
       t_quit quit = false;
       do {
-        t_errno errn = wait_event(events_, infos_, microseconds);
-        if (!errn) {
+        t_errn errn = wait_event(events_, infos_, microseconds);
+        if (errn == VALID) {
           if (!infos_.empty())
             quit = process_events(infos_, logic);
           else
@@ -239,8 +240,8 @@ namespace event_dispatcher
       t_n_ cnt = 0;
       t_quit quit = false;
       do {
-        t_errno errn = wait_event(err, events_, infos_, microseconds);
-        if (!errn) {
+        t_errn errn = wait_event(err, events_, infos_, microseconds);
+        if (errn == VALID) {
           if (!infos_.empty())
             quit = process_events(infos_, logic);
           else
@@ -305,47 +306,44 @@ namespace event_dispatcher
       return epoll_.del_event(err, info.params.fd) == VALID;
     }
 
-    virtual t_errno wait_event(r_events events, r_event_infos infos) override {
-      t_n_ n = get(epoll_.wait(epoll_events_, params.max));
-      if (n >= 0) {
-        for (t_n_ cnt = 0; cnt < n; ++cnt)
+    virtual t_errn wait_event(r_events events, r_event_infos infos) override {
+      auto verify = epoll_.wait(epoll_events_, params.max);
+      if (verify == VALID) {
+        for (t_n_ cnt = 0; cnt < get(verify.value); ++cnt)
           infos.push_back(events.get(t_id{epoll_events_[0].data.u32}));
-        return 0;
       }
-      return -1;
+      return verify.errn;
     }
 
-    virtual t_errno wait_event(r_err err, r_events events,
+    virtual t_validity wait_event(r_err err, r_events events,
                                r_event_infos infos) override {
       t_n_ n = get(epoll_.wait(err, epoll_events_, params.max));
       if (n >= 0) {
         for (t_n_ cnt = 0; cnt < n; ++cnt)
           infos.push_back(events.get(t_id{epoll_events_[0].data.u32}));
-        return 0;
       }
-      return -1;
+      return !err ? VALID : INVALID;
     }
 
-    virtual t_errno wait_event(r_events events, r_event_infos infos,
+    virtual t_errn wait_event(r_events events, r_event_infos infos,
                                t_microseconds usec) override {
-      t_n_ n = get(epoll_.wait(epoll_events_, params.max, usec));
-      if (n >= 0) {
-        for (t_n_ cnt = 0; cnt < n; ++cnt)
+      auto verify = epoll_.wait(epoll_events_, params.max, usec);
+      if (verify == VALID) {
+        for (t_n_ cnt = 0; cnt < get(verify.value); ++cnt)
           infos.push_back(events.get(t_id{epoll_events_[0].data.u32}));
-        return 0;
       }
-      return -1;
+      return verify.errn;
     }
 
-    virtual t_errno wait_event(r_err err, r_events events, r_event_infos infos,
-                               t_microseconds usec) override {
+    virtual t_validity wait_event(r_err err, r_events events,
+                                  r_event_infos infos,
+                                  t_microseconds usec) override {
       t_n_ n = get(epoll_.wait(err, epoll_events_, params.max, usec));
       if (n >= 0) {
         for (t_n_ cnt = 0; cnt < n; ++cnt)
           infos.push_back(events.get(t_id{epoll_events_[0].data.u32}));
-        return 0;
       }
-      return -1;
+      return !err ? VALID : INVALID;
     }
 
   private:

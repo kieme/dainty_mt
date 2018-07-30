@@ -50,6 +50,7 @@ namespace event_dispatcher
   using named::t_validity;
   using named::VALID;
   using named::INVALID;
+  using os::t_errn;
   using os::t_fd;
   using os::BAD_FD;
 
@@ -72,8 +73,6 @@ namespace event_dispatcher
   using t_quit         = named::t_bool;
   enum  t_event_type { RD, WR };
   enum  t_cmd        { QUIT_EVENT_LOOP, REMOVE_EVENT, CONTINUE };
-
-  using t_errno = named::t_uint32; //XXX
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -177,7 +176,7 @@ namespace event_dispatcher
       using r_event_info   = event_dispatcher::r_event_info;
       using r_event_infos  = event_dispatcher::r_event_infos;
       using t_microseconds = event_dispatcher::t_microseconds;
-      using t_errno        = event_dispatcher::t_errno;
+      using t_errn         = event_dispatcher::t_errn;
       using t_quit         = event_dispatcher::t_quit;
 
       virtual ~t_logic() { }
@@ -185,7 +184,7 @@ namespace event_dispatcher
       virtual t_void may_reorder_events (r_event_infos)  = 0;
       virtual t_void notify_event_remove(r_event_info)   = 0;
       virtual t_quit notify_timeout     (t_microseconds) = 0;
-      virtual t_quit notify_error       (t_errno)        = 0;
+      virtual t_quit notify_error       (t_errn)         = 0;
     };
 
     using p_logic = named::t_prefix<t_logic>::p_;

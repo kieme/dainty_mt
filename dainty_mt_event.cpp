@@ -61,7 +61,9 @@ namespace event
     }
 
     t_validity post(t_user, t_cnt cnt) noexcept {
-      return eventfd_.write(get(cnt));
+      if (eventfd_.write(get(cnt)) == VALID)
+        return VALID;
+      return INVALID;
     }
 
     t_validity post(t_err& err, t_user, t_cnt cnt) noexcept {

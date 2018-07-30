@@ -72,17 +72,18 @@ namespace condvar_notify_change
     }
 
     t_validity post(t_user user, t_any&& any) noexcept {
+      t_validity validity = INVALID;
       <% auto scope = lock_.make_locked_scope();
         if (scope == VALID && any != any_) {
           user_    = user;
           any_     = std::move(any);
           changed_ = true;
-          if (cond_.signal())
-            return INVALID;
-          return VALID;
+          validity = VALID;
+          if (cond_.signal() == INVALID)
+            validity = INVALID;
         }
       %>
-      return INVALID;
+      return validity;
     }
 
     t_validity post(t_err& err, t_user user, t_any&& any) noexcept {

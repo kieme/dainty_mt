@@ -109,16 +109,17 @@ namespace condvar_timed_event
     }
 
     t_validity post(t_user, t_cnt cnt) noexcept {
+      t_validity validity = INVALID;
       <% auto scope = lock_.make_locked_scope();
         if (scope == VALID) {
           const t_bool signal = !cnt_;
           cnt_ += get(cnt);
-          if (signal && cond_.signal())
-            return INVALID;
-          return VALID;
+          validity = VALID;
+          if (signal && cond_.signal() == INVALID)
+            validity = INVALID;
         }
       %>
-      return INVALID;
+      return validity;
     }
 
     t_validity post(t_err& err, t_user, t_cnt cnt) noexcept {
