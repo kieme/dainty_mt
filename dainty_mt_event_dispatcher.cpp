@@ -68,14 +68,14 @@ namespace event_dispatcher
 
 ///////////////////////////////////////////////////////////////////////////////
 
-    virtual t_bool add_event(        r_event_info) = 0;
-    virtual t_bool add_event(r_err,  r_event_info) = 0;
-    virtual t_bool del_event(        r_event_info) = 0;
-    virtual t_bool del_event(r_err,  r_event_info) = 0;
-    virtual t_bool wait_event(       r_events, r_event_infos) = 0;
-    virtual t_bool wait_event(r_err, r_events, r_event_infos) = 0;
-    virtual t_bool wait_event(       r_events, r_event_infos, t_microseconds) = 0;
-    virtual t_bool wait_event(r_err, r_events, r_event_infos, t_microseconds) = 0;
+    virtual t_bool  add_event(        r_event_info) = 0;
+    virtual t_bool  add_event(r_err,  r_event_info) = 0;
+    virtual t_bool  del_event(        r_event_info) = 0;
+    virtual t_bool  del_event(r_err,  r_event_info) = 0;
+    virtual t_errno wait_event(       r_events, r_event_infos) = 0;
+    virtual t_errno wait_event(r_err, r_events, r_event_infos) = 0;
+    virtual t_errno wait_event(       r_events, r_event_infos, t_microseconds) = 0;
+    virtual t_errno wait_event(r_err, r_events, r_event_infos, t_microseconds) = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -200,7 +200,21 @@ namespace event_dispatcher
     }
 
     t_n event_loop(r_err err, p_logic logic) {
-      return t_n{0};
+      t_n_ cnt = 0;
+      t_quit quit = false;
+      do {
+        t_errno errn = wait_event(err, events_, infos_);
+        if (!errn) {
+          if (!infos_.empty())
+            quit = process_events(infos_, logic);
+          else
+            quit = true;
+        } else
+          quit = logic->notify_error(errn);
+        infos_.clear();
+        ++cnt;
+      } while (!quit);
+      return t_n{cnt};
     }
 
     t_n event_loop(p_logic logic, t_microseconds microseconds) {
@@ -222,7 +236,21 @@ namespace event_dispatcher
     }
 
     t_n event_loop(r_err err, p_logic logic, t_microseconds microseconds) {
-      return t_n{0};
+      t_n_ cnt = 0;
+      t_quit quit = false;
+      do {
+        t_errno errn = wait_event(err, events_, infos_, microseconds);
+        if (!errn) {
+          if (!infos_.empty())
+            quit = process_events(infos_, logic);
+          else
+            quit = logic->notify_timeout(microseconds);
+        } else
+          quit = logic->notify_error(errn);
+        infos_.clear();
+        ++cnt;
+      } while (!quit);
+      return t_n{cnt};
     }
 
   private:
@@ -277,27 +305,47 @@ namespace event_dispatcher
       return epoll_.del_event(err, info.params.fd) == VALID;
     }
 
-    virtual t_bool wait_event(r_events events, r_event_infos infos) override {
+    virtual t_errno wait_event(r_events events, r_event_infos infos) override {
       t_n_ n = get(epoll_.wait(epoll_events_, params.max));
       if (n >= 0) {
         for (t_n_ cnt = 0; cnt < n; ++cnt)
           infos.push_back(events.get(t_id{epoll_events_[0].data.u32}));
-        return true;
+        return 0;
       }
-      return false;
+      return -1;
     }
 
-    virtual t_bool wait_event(r_err, r_events, r_event_infos) override {
-      return false;
+    virtual t_errno wait_event(r_err err, r_events events,
+                               r_event_infos infos) override {
+      t_n_ n = get(epoll_.wait(err, epoll_events_, params.max));
+      if (n >= 0) {
+        for (t_n_ cnt = 0; cnt < n; ++cnt)
+          infos.push_back(events.get(t_id{epoll_events_[0].data.u32}));
+        return 0;
+      }
+      return -1;
     }
 
-    virtual t_bool wait_event(r_events, r_event_infos, t_microseconds) {
-      return false;
+    virtual t_errno wait_event(r_events events, r_event_infos infos,
+                               t_microseconds usec) override {
+      t_n_ n = get(epoll_.wait(epoll_events_, params.max, usec));
+      if (n >= 0) {
+        for (t_n_ cnt = 0; cnt < n; ++cnt)
+          infos.push_back(events.get(t_id{epoll_events_[0].data.u32}));
+        return 0;
+      }
+      return -1;
     }
 
-    virtual t_bool wait_event(r_err, r_events, r_event_infos,
-                              t_microseconds) override {
-      return false;
+    virtual t_errno wait_event(r_err err, r_events events, r_event_infos infos,
+                               t_microseconds usec) override {
+      t_n_ n = get(epoll_.wait(err, epoll_events_, params.max, usec));
+      if (n >= 0) {
+        for (t_n_ cnt = 0; cnt < n; ++cnt)
+          infos.push_back(events.get(t_id{epoll_events_[0].data.u32}));
+        return 0;
+      }
+      return -1;
     }
 
   private:
