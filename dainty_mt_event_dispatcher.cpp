@@ -75,8 +75,8 @@ namespace event_dispatcher
 
     virtual t_errn     wait_events(       r_events, r_event_infos) = 0;
     virtual t_validity wait_events(r_err, r_events, r_event_infos) = 0;
-    virtual t_errn     wait_events(       r_events, r_event_infos, t_microseconds) = 0;
-    virtual t_validity wait_events(r_err, r_events, r_event_infos, t_microseconds) = 0;
+    virtual t_errn     wait_events(       r_events, r_event_infos, t_usec) = 0;
+    virtual t_validity wait_events(r_err, r_events, r_event_infos, t_usec) = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -217,16 +217,16 @@ namespace event_dispatcher
       return t_n{cnt};
     }
 
-    t_n event_loop(p_logic logic, t_microseconds microseconds) {
+    t_n event_loop(p_logic logic, t_usec usec) {
       t_n_ cnt = 0;
       t_quit quit = false;
       do {
-        t_errn errn = wait_events(events_, infos_, microseconds);
+        t_errn errn = wait_events(events_, infos_, usec);
         if (errn == VALID) {
           if (!infos_.empty())
             quit = process_events(infos_, logic);
           else
-            quit = logic->notify_timeout(microseconds);
+            quit = logic->notify_timeout(usec);
         } else
           quit = logic->notify_error(errn);
         infos_.clear();
@@ -235,15 +235,15 @@ namespace event_dispatcher
       return t_n{cnt};
     }
 
-    t_n event_loop(r_err err, p_logic logic, t_microseconds microseconds) {
+    t_n event_loop(r_err err, p_logic logic, t_usec usec) {
       t_n_ cnt = 0;
       t_quit quit = false;
       do {
-        if (wait_events(err, events_, infos_, microseconds) == VALID) {
+        if (wait_events(err, events_, infos_, usec) == VALID) {
           if (!infos_.empty())
             quit = process_events(infos_, logic);
           else
-            quit = logic->notify_timeout(microseconds);
+            quit = logic->notify_timeout(usec);
         } else
           quit = logic->notify_error(t_errn(err.id()));
         infos_.clear();
@@ -324,7 +324,7 @@ namespace event_dispatcher
     }
 
     virtual t_errn wait_events(r_events events, r_event_infos infos,
-                               t_microseconds usec) override {
+                               t_usec usec) override {
       auto verify = epoll_.wait(epoll_events_, params.max, usec);
       if (verify == VALID) {
         for (t_n_ cnt = 0; cnt < get(verify.value); ++cnt)
@@ -334,8 +334,7 @@ namespace event_dispatcher
     }
 
     virtual t_validity wait_events(r_err err, r_events events,
-                                   r_event_infos infos,
-                                   t_microseconds usec) override {
+                                   r_event_infos infos, t_usec usec) override {
       t_n_ n = get(epoll_.wait(err, epoll_events_, params.max, usec));
       if (n >= 0) {
         for (t_n_ cnt = 0; cnt < n; ++cnt)
@@ -485,17 +484,16 @@ namespace event_dispatcher
     return t_n{0};
   }
 
-  t_n t_dispatcher::event_loop(p_logic logic, t_microseconds microseconds) {
+  t_n t_dispatcher::event_loop(p_logic logic, t_usec usec) {
     if (*this == VALID)
-      return impl_->event_loop(logic, microseconds);
+      return impl_->event_loop(logic, usec);
     return t_n{0};
   }
 
-  t_n t_dispatcher::event_loop(t_err err, p_logic logic,
-                               t_microseconds microseconds) {
+  t_n t_dispatcher::event_loop(t_err err, p_logic logic, t_usec usec) {
     T_ERR_GUARD(err) {
       if (*this == VALID)
-        return impl_->event_loop(err, logic, microseconds);
+        return impl_->event_loop(err, logic, usec);
       err = E_XXX;
     }
     return t_n{0};

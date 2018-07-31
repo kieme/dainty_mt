@@ -44,6 +44,7 @@ namespace event_dispatcher
   using named::t_void;
   using named::t_bool;
   using named::t_n;
+  using named::t_usec;
   using named::t_ix;
   using named::string::t_string;
   using named::string::FMT;
@@ -69,7 +70,6 @@ namespace event_dispatcher
   using t_name = t_string<t_name_tag_, 20>;
 
   using t_event_prio   = named::t_uchar;
-  using t_microseconds = named::t_uint;
   using t_quit         = named::t_bool;
   enum  t_event_type { RD, WR };
   enum  t_cmd        { QUIT_EVENT_LOOP, REMOVE_EVENT, CONTINUE };
@@ -175,16 +175,16 @@ namespace event_dispatcher
     public:
       using r_event_info   = event_dispatcher::r_event_info;
       using r_event_infos  = event_dispatcher::r_event_infos;
-      using t_microseconds = event_dispatcher::t_microseconds;
+      using t_usec         = event_dispatcher::t_usec;
       using t_errn         = event_dispatcher::t_errn;
       using t_quit         = event_dispatcher::t_quit;
 
       virtual ~t_logic() { }
 
-      virtual t_void may_reorder_events (r_event_infos)  = 0;
-      virtual t_void notify_event_remove(r_event_info)   = 0;
-      virtual t_quit notify_timeout     (t_microseconds) = 0;
-      virtual t_quit notify_error       (t_errn)         = 0;
+      virtual t_void may_reorder_events (r_event_infos) = 0;
+      virtual t_void notify_event_remove(r_event_info)  = 0;
+      virtual t_quit notify_timeout     (t_usec)        = 0;
+      virtual t_quit notify_error       (t_errn)        = 0;
     };
 
     using p_logic = named::t_prefix<t_logic>::p_;
@@ -219,8 +219,8 @@ namespace event_dispatcher
     t_n event_loop(       p_logic);
     t_n event_loop(t_err, p_logic);
 
-    t_n event_loop(       p_logic, t_microseconds);
-    t_n event_loop(t_err, p_logic, t_microseconds);
+    t_n event_loop(       p_logic, t_usec);
+    t_n event_loop(t_err, p_logic, t_usec);
 
   private:
     p_impl_ impl_ = nullptr;
