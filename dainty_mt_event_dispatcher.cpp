@@ -73,10 +73,10 @@ namespace event_dispatcher
     virtual t_errn     del_event(        r_event_info) = 0;
     virtual t_validity del_event(r_err,  r_event_info) = 0;
 
-    virtual t_validity wait_event(       r_events, r_event_infos) = 0;
-    virtual t_errn     wait_event(r_err, r_events, r_event_infos) = 0;
-    virtual t_validity wait_event(       r_events, r_event_infos, t_microseconds) = 0;
-    virtual t_errn     wait_event(r_err, r_events, r_event_infos, t_microseconds) = 0;
+    virtual t_errn     wait_events(       r_events, r_event_infos) = 0;
+    virtual t_validity wait_events(r_err, r_events, r_event_infos) = 0;
+    virtual t_errn     wait_events(       r_events, r_event_infos, t_microseconds) = 0;
+    virtual t_validity wait_events(r_err, r_events, r_event_infos, t_microseconds) = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -186,7 +186,7 @@ namespace event_dispatcher
       t_n_ cnt = 0;
       t_quit quit = false;
       do {
-        t_errn errn = wait_event(events_, infos_);
+        t_errn errn = wait_events(events_, infos_);
         if (errn == VALID) {
           if (!infos_.empty())
             quit = process_events(infos_, logic);
@@ -204,14 +204,13 @@ namespace event_dispatcher
       t_n_ cnt = 0;
       t_quit quit = false;
       do {
-        t_errn errn = wait_event(err, events_, infos_);
-        if (errn == VALID) {
+        if (wait_events(err, events_, infos_) == VALID) {
           if (!infos_.empty())
             quit = process_events(infos_, logic);
           else
             quit = true;
         } else
-          quit = logic->notify_error(errn);
+          quit = logic->notify_error(t_errn(err.id()));
         infos_.clear();
         ++cnt;
       } while (!quit);
@@ -222,7 +221,7 @@ namespace event_dispatcher
       t_n_ cnt = 0;
       t_quit quit = false;
       do {
-        t_errn errn = wait_event(events_, infos_, microseconds);
+        t_errn errn = wait_events(events_, infos_, microseconds);
         if (errn == VALID) {
           if (!infos_.empty())
             quit = process_events(infos_, logic);
@@ -240,14 +239,13 @@ namespace event_dispatcher
       t_n_ cnt = 0;
       t_quit quit = false;
       do {
-        t_errn errn = wait_event(err, events_, infos_, microseconds);
-        if (errn == VALID) {
+        if (wait_events(err, events_, infos_, microseconds) == VALID) {
           if (!infos_.empty())
             quit = process_events(infos_, logic);
           else
             quit = logic->notify_timeout(microseconds);
         } else
-          quit = logic->notify_error(errn);
+          quit = logic->notify_error(t_errn(err.id()));
         infos_.clear();
         ++cnt;
       } while (!quit);
@@ -282,31 +280,31 @@ namespace event_dispatcher
              epoll_events_ && epoll_ == VALID ? VALID : INVALID;
     }
 
-    virtual t_bool add_event(r_event_info info) override {
+    virtual t_errn add_event(r_event_info info) override {
      t_epoll::t_event_data data;
      data.u32 = get(info.id);
      return epoll_.add_event(info.params.fd,
                              info.params.type == RD ? EPOLLIN : EPOLLOUT,
-                             data) == VALID;
+                             data);
     }
 
-    virtual t_bool add_event(r_err err,  r_event_info info) override {
+    virtual t_validity add_event(r_err err,  r_event_info info) override {
      t_epoll::t_event_data data;
      data.u32 = get(info.id);
      return epoll_.add_event(err, info.params.fd,
                              info.params.type == RD ? EPOLLIN : EPOLLOUT,
-                             data) == VALID;
+                             data);
     }
 
-    virtual t_bool del_event(r_event_info info) override {
-      return epoll_.del_event(info.params.fd) == VALID; // not bool but validity
+    virtual t_errn del_event(r_event_info info) override {
+      return epoll_.del_event(info.params.fd);
     }
 
-    virtual t_bool del_event(r_err err, r_event_info info) override {
-      return epoll_.del_event(err, info.params.fd) == VALID;
+    virtual t_validity del_event(r_err err, r_event_info info) override {
+      return epoll_.del_event(err, info.params.fd);
     }
 
-    virtual t_errn wait_event(r_events events, r_event_infos infos) override {
+    virtual t_errn wait_events(r_events events, r_event_infos infos) override {
       auto verify = epoll_.wait(epoll_events_, params.max);
       if (verify == VALID) {
         for (t_n_ cnt = 0; cnt < get(verify.value); ++cnt)
@@ -315,7 +313,7 @@ namespace event_dispatcher
       return verify.errn;
     }
 
-    virtual t_validity wait_event(r_err err, r_events events,
+    virtual t_validity wait_events(r_err err, r_events events,
                                r_event_infos infos) override {
       t_n_ n = get(epoll_.wait(err, epoll_events_, params.max));
       if (n >= 0) {
@@ -325,7 +323,7 @@ namespace event_dispatcher
       return !err ? VALID : INVALID;
     }
 
-    virtual t_errn wait_event(r_events events, r_event_infos infos,
+    virtual t_errn wait_events(r_events events, r_event_infos infos,
                                t_microseconds usec) override {
       auto verify = epoll_.wait(epoll_events_, params.max, usec);
       if (verify == VALID) {
@@ -335,9 +333,9 @@ namespace event_dispatcher
       return verify.errn;
     }
 
-    virtual t_validity wait_event(r_err err, r_events events,
-                                  r_event_infos infos,
-                                  t_microseconds usec) override {
+    virtual t_validity wait_events(r_err err, r_events events,
+                                   r_event_infos infos,
+                                   t_microseconds usec) override {
       t_n_ n = get(epoll_.wait(err, epoll_events_, params.max, usec));
       if (n >= 0) {
         for (t_n_ cnt = 0; cnt < n; ++cnt)

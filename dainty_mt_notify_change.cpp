@@ -81,7 +81,7 @@ namespace notify_change
           any_     = std::move(any);
           changed_ = true;
           t_eventfd::t_value value = 1;
-          return eventfd_.write(value);
+          return eventfd_.write(value) == VALID ? VALID : INVALID;
         }
       %>
       return INVALID;

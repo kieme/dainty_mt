@@ -139,7 +139,7 @@ namespace thread
   }
 
   t_validity t_thread::join() noexcept {
-    return thread_.join() == 0 ? VALID : INVALID;
+    return thread_.join() == VALID ? VALID : INVALID;
   }
 
   t_validity t_thread::join(t_err err) noexcept {
@@ -147,7 +147,7 @@ namespace thread
   }
 
   t_validity t_thread::join(p_void& arg) noexcept {
-    return thread_.join(arg) == 0 ? VALID : INVALID;
+    return thread_.join(arg) == VALID ? VALID : INVALID;
   }
 
   t_validity t_thread::join(t_err err, p_void& arg) noexcept {

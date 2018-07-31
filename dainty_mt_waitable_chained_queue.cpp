@@ -34,6 +34,7 @@ namespace mt
 namespace waitable_chained_queue
 {
   using named::t_n_;
+  using dainty::os::t_errn;
   using namespace dainty::os::threading;
   using namespace dainty::os::fdbased;
 
@@ -88,13 +89,12 @@ namespace waitable_chained_queue
         if (scope == VALID) {
           t_chain chain;
           ++waiting_;
+          t_errn errn{-1};
           do {
             chain = queue_.acquire(t_n{1});
-            if (!get(chain.cnt) && cond_.wait(lock1_)) {
-              --waiting_;
-              return {};
-            }
-          } while (get(chain.cnt));
+            if (!get(chain.cnt))
+              errn = cond_.wait(lock1_);
+          } while (!get(chain.cnt) && errn == VALID);
           --waiting_;
           return chain;
         }
@@ -111,7 +111,7 @@ namespace waitable_chained_queue
             chain = queue_.acquire(err, t_n{1});
             if (!get(chain.cnt))
               cond_.wait(err, lock1_);
-          } while (!err && !get(chain.cnt));
+          } while (!get(chain.cnt) && !err);
           --waiting_;
           return chain;
         }
@@ -135,22 +135,22 @@ namespace waitable_chained_queue
     }
 
     t_validity insert(t_user, t_chain& chain) noexcept {
+      t_validity validity = INVALID;
       if (get(chain.cnt)) {
         t_bool send = false;
         <% auto scope = lock2_.make_locked_scope();
           if (scope == VALID) {
             send = queue_.is_empty();
             queue_.insert(chain);
-          } else
-            return INVALID;
+            validity = VALID;
+          }
         %>
         if (send) {
           t_eventfd::t_value value = 1;
-          return eventfd_.write(value);
+          validity = eventfd_.write(value) == VALID ? VALID : INVALID;
         }
-        return VALID;
       }
-      return INVALID;
+      return validity;
     }
 
     t_validity insert(t_err& err, t_user, t_chain& chain) noexcept {
