@@ -84,6 +84,30 @@ namespace waitable_chained_queue
       return !err ? VALID : INVALID;
     }
 
+    t_validity process_available(t_err& err, t_logic& logic) noexcept {
+      t_chain chain;
+      <% auto scope = lock2_.make_locked_scope(err);
+        if (scope == VALID) {
+          chain = queue_.remove(err);
+          if (get(chain.cnt)) {
+            t_eventfd::t_value value = 0;
+            eventfd_.read(err, value);
+          }
+        }
+      %>
+      if (get(chain.cnt)) {
+        logic.async_process(chain);
+        <% auto scope = lock1_.make_locked_scope(err);
+          if (scope == VALID) {
+            queue_.release(err, chain);
+            if (waiting_)
+              cond_.broadcast(err);
+          }
+        %>
+      }
+      return !err ? VALID : INVALID;
+    }
+
     t_chain waitable_acquire(t_user) noexcept {
       <% auto scope = lock1_.make_locked_scope();
         if (scope == VALID) {
@@ -143,12 +167,12 @@ namespace waitable_chained_queue
             send = queue_.is_empty();
             queue_.insert(chain);
             validity = VALID;
+            if (send) {
+              t_eventfd::t_value value = 1;
+              validity = eventfd_.write(value) == VALID ? VALID : INVALID;
+            }
           }
         %>
-        if (send) {
-          t_eventfd::t_value value = 1;
-          validity = eventfd_.write(value) == VALID ? VALID : INVALID;
-        }
       }
       return validity;
     }
@@ -157,13 +181,15 @@ namespace waitable_chained_queue
       if (get(chain.cnt)) {
         t_bool send = false;
         <% auto scope = lock2_.make_locked_scope(err);
-          send = queue_.is_empty();
-          queue_.insert(err, chain);
+          if (scope == VALID) {
+            send = queue_.is_empty();
+            queue_.insert(err, chain);
+            if (send) {
+              t_eventfd::t_value value = 1;
+              eventfd_.write(err, value);
+            }
+          }
         %>
-        if (send) {
-          t_eventfd::t_value value = 1;
-          eventfd_.write(err, value);
-        }
       } else
         err = E_XXX;
       return !err ? VALID : INVALID;
@@ -280,6 +306,16 @@ namespace waitable_chained_queue
     T_ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->process(err, logic, max);
+      err = E_XXX;
+    }
+    return INVALID;
+  }
+
+  t_validity t_processor::process_available(t_err err,
+                                            t_logic& logic) noexcept {
+    T_ERR_GUARD(err) {
+      if (impl_ && *impl_ == VALID)
+        return impl_->process_available(err, logic);
       err = E_XXX;
     }
     return INVALID;
