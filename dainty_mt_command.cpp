@@ -62,15 +62,23 @@ namespace command
               t_command* cmd  = cmd_;
               t_user     user = user_;
               if (async_) {
-                cmd_ = nullptr;
-                cond_.signal(err);
-                logic.async_process(user, cmd);
+                if (wait_) {
+                  cmd_ = nullptr;
+                  cond_.signal(err);
+                  logic.async_process(user, cmd);
+                } else {
+                  cmd_ = nullptr;
+                  err = E_XXX;
+                }
               } else {
                 if (wait_) {
                   logic.process(err, user, *cmd);
+                  cmd_ = nullptr;
                   cond_.signal(); // err?
+                } else {
+                  cmd_ = nullptr;
+                  err = E_XXX;
                 }
-                cmd_ = nullptr;
               }
             }
           %>
@@ -83,23 +91,23 @@ namespace command
       t_validity validity = INVALID;
       <% auto scope = cmdlock_.make_locked_scope();
         if (scope == VALID) {
-          t_eventfd::t_value value = 1;
-          if (eventfd_.write(value) == VALID) {
-            <% auto scope = condlock_.make_locked_scope();
-              if (scope == VALID) {
-                user_  = user;
-                cmd_   = &cmd;
-                async_ = false;
-                wait_  = true;
+          <% auto scope = condlock_.make_locked_scope();
+            if (scope == VALID) {
+              user_  = user;
+              cmd_   = &cmd;
+              async_ = false;
+              wait_  = true;
+              t_eventfd::t_value value = 1;
+              if (eventfd_.write(value) == VALID) {
                 do {
                   validity = INVALID;
                   if (cond_.wait(condlock_) == VALID)
                     validity = VALID;
                 } while (validity == VALID && cmd_);
-                wait_  = false;
               }
-            %>
-          }
+              wait_  = false;
+            }
+          %>
         }
       %>
       return validity;
@@ -108,19 +116,19 @@ namespace command
     t_validity request(t_err& err, t_user user, t_command& cmd) noexcept {
       <% auto scope = cmdlock_.make_locked_scope(err);
         if (scope == VALID) {
-          t_eventfd::t_value value = 1;
-          if (eventfd_.write(err, value) == VALID) {
-            <% auto scope = condlock_.make_locked_scope(err);
-              if (scope == VALID) {
-                user_  = user;
-                cmd_   = &cmd;
-                async_ = false;
-                wait_  = true;
+          <% auto scope = condlock_.make_locked_scope(err);
+            if (scope == VALID) {
+              user_  = user;
+              cmd_   = &cmd;
+              async_ = false;
+              wait_  = true;
+              t_eventfd::t_value value = 1;
+              if (eventfd_.write(err, value) == VALID) {
                 while (cond_.wait(err, condlock_) == VALID && cmd_);
-                wait_  = false;
               }
-            %>
-          }
+              wait_  = false;
+            }
+          %>
         }
       %>
       return !err ? VALID : INVALID;
@@ -130,21 +138,23 @@ namespace command
       t_validity validity = INVALID;
       <% auto scope = cmdlock_.make_locked_scope();
         if (scope == VALID) {
-          t_eventfd::t_value value = 1;
-          if (eventfd_.write(value) == VALID) {
-            <% auto scope = condlock_.make_locked_scope();
-              if (scope == VALID) {
-                user_  = user;
-                cmd_   = cmd;
-                async_ = true;
+          <% auto scope = condlock_.make_locked_scope();
+            if (scope == VALID) {
+              user_  = user;
+              cmd_   = cmd;
+              async_ = true;
+              wait_  = true;
+              t_eventfd::t_value value = 1;
+              if (eventfd_.write(value) == VALID) {
                 do {
                   validity = INVALID;
                   if (cond_.wait(condlock_) == VALID)
                     validity = VALID;
                 } while (validity == VALID && cmd_);
               }
-            %>
-          }
+              wait_  = false;
+            }
+          %>
         }
       %>
       return validity;
@@ -154,17 +164,19 @@ namespace command
                              t_command* cmd) noexcept {
       <% auto scope = cmdlock_.make_locked_scope(err);
         if (scope == VALID) {
-          t_eventfd::t_value value = 1;
-          if (eventfd_.write(err, value) == VALID) {
-            <% auto scope = condlock_.make_locked_scope(err);
-              if (scope == VALID) {
-                user_  = user;
-                cmd_   = cmd;
-                async_ = true;
+          <% auto scope = condlock_.make_locked_scope(err);
+            if (scope == VALID) {
+              user_  = user;
+              cmd_   = cmd;
+              async_ = true;
+              wait_  = true;
+              t_eventfd::t_value value = 1;
+              if (eventfd_.write(err, value) == VALID) {
                 while (cond_.wait(err, condlock_) == VALID && cmd_);
               }
-            %>
-          }
+              wait_  = false;
+            }
+          %>
         }
       %>
       return !err ? VALID : INVALID;

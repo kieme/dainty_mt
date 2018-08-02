@@ -160,7 +160,7 @@ namespace event_dispatcher
 
     t_quit process_events(r_event_infos infos, p_logic logic) {
       if (!infos.empty()) {
-         logic->may_reorder_events(infos);
+        logic->may_reorder_events(infos);
         for (auto info : infos) {
           t_action action = info->logic->notify_event(info->params);
           switch (action.cmd) {
