@@ -122,7 +122,7 @@ namespace detached_thread
             (!::pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED)) &&
             (logic->update (err, attr) == VALID) &&
             /* must check that it is not made joinable */
-            (thread_.create(err, start_, &data) == VALID)) {
+            (thread_.create(err, start_, &data, attr) == VALID)) {
           <% auto scope = data.lock_.make_locked_scope(err);
              while (!err && !data.ready_)
                data.cond_.wait(err, data.lock_);

@@ -124,7 +124,7 @@ namespace thread
         if ((!::pthread_attr_init(&attr)) &&
             (logic->update (err, attr) == VALID) &&
             /* must check that it is not made detach */
-            (thread_.create(err, start_, &data) == VALID)) {
+            (thread_.create(err, start_, &data, attr) == VALID)) {
           <% auto scope = data.lock_.make_locked_scope(err);
              while (!err && !data.ready_)
                data.cond_.wait(err, data.lock_);
