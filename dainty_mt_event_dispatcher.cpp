@@ -314,7 +314,7 @@ namespace event_dispatcher
     }
 
     virtual t_validity wait_events(r_err err, r_events events,
-                               r_event_infos infos) override {
+                                   r_event_infos infos) override {
       t_n_ n = get(epoll_.wait(err, epoll_events_, params.max));
       if (n >= 0) {
         for (t_n_ cnt = 0; cnt < n; ++cnt)
