@@ -49,7 +49,12 @@ namespace waitable_chained_queue
   using t_user = named::t_user<t_user_tag_>;
 
   using t_any   = container::any::t_any;
-  using t_chain = container::chained_queue::t_chain<t_any>;
+
+  struct t_entry {
+    t_n   cnt = t_n{1};
+    t_any any;
+  };
+  using t_chain = container::chained_queue::t_chain<t_entry>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -74,6 +79,9 @@ namespace waitable_chained_queue
 
     t_validity insert (       t_chain)      noexcept;
     t_validity insert (t_err, t_chain)      noexcept;
+
+    t_validity compared_insert (       t_chain) noexcept;
+    t_validity compared_insert (t_err, t_chain) noexcept;
 
   private:
     friend class t_processor;

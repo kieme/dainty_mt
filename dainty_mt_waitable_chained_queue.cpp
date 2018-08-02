@@ -38,7 +38,7 @@ namespace waitable_chained_queue
   using namespace dainty::os::threading;
   using namespace dainty::os::fdbased;
 
-  using t_queue = container::chained_queue::t_chained_queue<t_any>;
+  using t_queue = container::chained_queue::t_chained_queue<t_entry>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -195,6 +195,53 @@ namespace waitable_chained_queue
       return !err ? VALID : INVALID;
     }
 
+    t_validity compared_insert(t_user, t_chain& chain) noexcept {
+      t_validity validity = INVALID;
+      if (get(chain.cnt) == 1) {
+        <% auto scope = lock2_.make_locked_scope();
+          if (scope == VALID) {
+            t_bool must_insert = true;
+            auto tail = queue_.get_tail();
+            if (tail && tail->ref().any == chain.head->ref().any) {
+              ++set(tail->ref().cnt);
+              must_insert = false;
+            }
+            if (must_insert)
+              queue_.insert(chain);
+            validity = VALID;
+            if (!tail) {
+              t_eventfd::t_value value = 1;
+              validity = eventfd_.write(value) == VALID ? VALID : INVALID;
+            }
+          }
+        %>
+      }
+      return validity;
+    }
+
+    t_validity compared_insert(t_err& err, t_user, t_chain& chain) noexcept {
+      if (get(chain.cnt) == 1) {
+        <% auto scope = lock2_.make_locked_scope(err);
+          if (scope == VALID) {
+            t_bool must_insert = true;
+            auto tail = queue_.get_tail();
+            if (tail && tail->ref().any == chain.head->ref().any) {
+              ++set(tail->ref().cnt);
+              must_insert = false;
+            }
+            if (must_insert)
+              queue_.insert(chain);
+            if (!tail) {
+              t_eventfd::t_value value = 1;
+              eventfd_.write(err, value);
+            }
+          }
+        %>
+      } else
+        err = E_XXX;
+      return !err ? VALID : INVALID;
+    }
+
     t_fd get_fd() const noexcept {
       return eventfd_.get_fd();
     }
@@ -260,6 +307,21 @@ namespace waitable_chained_queue
     T_ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->insert(err, user_, chain);
+      err = E_XXX;
+    }
+    return INVALID;
+  }
+
+  t_validity t_client::compared_insert(t_chain chain) noexcept {
+    if (impl_)
+      return impl_->compared_insert(user_, chain);
+    return INVALID;
+  }
+
+  t_validity t_client::compared_insert(t_err err, t_chain chain) noexcept {
+    T_ERR_GUARD(err) {
+      if (impl_ && *impl_ == VALID)
+        return impl_->compared_insert(err, user_, chain);
       err = E_XXX;
     }
     return INVALID;
