@@ -37,11 +37,13 @@ namespace mt
 
     const t_def err_tbl_[] = {
       /* CATEGORY                 MESSAGE               NEXT CODE      */
+      { v_category_ignore, P_cstr{"mt: bad"},             E_XXX   },
+      { v_category_ignore, P_cstr{"mt::undefined"},       0       }
     };
   }
 
   t_def err_what(t_id id) {
-    return err_tbl_[id <= 0 ? id : 0];
+    return err_tbl_[id <= E_XXX ? id : 0];
   }
 }
 }
