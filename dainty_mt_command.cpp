@@ -59,26 +59,20 @@ namespace command
         if (eventfd_.read(err, value) == VALID) {
           <% auto scope = condlock_.make_locked_scope(err);
             if (scope == VALID) {
-              t_command* cmd  = cmd_;
-              t_user     user = user_;
-              if (async_) {
-                if (wait_) {
-                  cmd_ = nullptr;
+              if (wait_) {
+                if (async_) {
+                  t_command* cmd = named::reset(cmd_);
+                  t_user user = user_;
                   cond_.signal(err);
                   logic.async_process(user, cmd);
                 } else {
-                  cmd_ = nullptr;
-                  err = E_XXX;
+                  logic.process(err, user_, *cmd_);
+                  named::reset(cmd_);
+                  cond_.signal();
                 }
               } else {
-                if (wait_) {
-                  logic.process(err, user, *cmd);
-                  cmd_ = nullptr;
-                  cond_.signal(); // err?
-                } else {
-                  cmd_ = nullptr;
-                  err = E_XXX;
-                }
+                cmd_ = nullptr;
+                err = E_XXX;
               }
             }
           %>
