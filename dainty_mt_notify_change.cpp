@@ -33,6 +33,7 @@ namespace mt
 {
 namespace notify_change
 {
+  using err::r_err;
   using namespace dainty::os::threading;
   using namespace dainty::os::fdbased;
 
@@ -40,7 +41,7 @@ namespace notify_change
 
   class t_impl_ {
   public:
-    using t_logic = t_processor::t_logic;
+    using r_logic = t_processor::r_logic;
 
     t_impl_(t_err& err, t_any&& any) noexcept
       : lock_(err), eventfd_(err, t_n{0}), any_(std::move(any)) {
@@ -50,15 +51,16 @@ namespace notify_change
       return (lock_ == VALID && eventfd_ == VALID) ?  VALID : INVALID;
     }
 
-    t_validity process(t_err& err, t_logic& logic, t_n max) noexcept {
+    t_void process(r_err err, r_logic logic, t_n max) noexcept {
       for (t_n_ n = get(max); !err && n; --n) {
         t_eventfd::t_value value = 0;
-        if (eventfd_.read(err, value) == VALID) {
+        eventfd_.read(err, value);
+        if (!err) {
           t_any  any;
           t_user user;
           t_bool changed = false;
           <% auto scope = lock_.make_locked_scope(err);
-            if (scope == VALID) {
+            if (!err) {
               changed = changed_;
               if (changed) {
                 user = user_;
@@ -71,25 +73,25 @@ namespace notify_change
             logic.process(user, std::move(any));
         }
       }
-      return !err ? VALID : INVALID;
     }
 
-    t_validity post(t_user user, t_any&& any) noexcept {
+    t_errn post(t_user user, t_any&& any) noexcept {
       <% auto scope = lock_.make_locked_scope();
         if (scope == VALID && any != any_) {
           user_    = user;
           any_     = std::move(any);
           changed_ = true;
+
           t_eventfd::t_value value = 1;
-          return eventfd_.write(value) == VALID ? VALID : INVALID;
+          return eventfd_.write(value);
         }
       %>
-      return INVALID;
+      return t_errn{-1};
     }
 
-    t_validity post(t_err& err, t_user user, t_any&& any) noexcept {
+    t_void post(r_err err, t_user user, t_any&& any) noexcept {
       <% auto scope = lock_.make_locked_scope(err);
-        if (scope == VALID && any != any_) {
+        if (!err && any != any_) {
           user_    = user;
           any_     = std::move(any);
           changed_ = true;
@@ -98,7 +100,6 @@ namespace notify_change
           eventfd_.write(err, value);
         }
       %>
-      return !err ? VALID : INVALID;
     }
 
     t_fd get_fd() const noexcept {
@@ -110,7 +111,7 @@ namespace notify_change
       return {this, user};
     }
 
-    t_client make_client(t_err&, t_user user) noexcept {
+    t_client make_client(r_err, t_user user) noexcept {
       // NOTE: future, we have information on clients.
       return {this, user};
     }
@@ -125,31 +126,29 @@ namespace notify_change
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  t_validity t_client::post(t_any&& any) noexcept {
+  t_errn t_client::post(t_any&& any) noexcept {
     if (impl_)
       return impl_->post(user_, std::move(any));
-    return INVALID;
+    return t_errn{-1};
   }
 
-  t_validity t_client::post(t_err err, t_any&& any) noexcept {
-    T_ERR_GUARD(err) {
+  t_void t_client::post(t_err err, t_any&& any) noexcept {
+    ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
-        return impl_->post(err, user_, std::move(any));
-      err = E_XXX;
+        impl_->post(err, user_, std::move(any));
+      else
+        err = E_XXX;
     }
-    return INVALID;
   }
 
 ///////////////////////////////////////////////////////////////////////////////
 
   t_processor::t_processor(t_err err, t_any&& any) noexcept {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       impl_ = new t_impl_(err, std::move(any));
       if (impl_) {
-        if (err) {
-          delete impl_;
-          impl_ = nullptr;
-        }
+        if (err)
+          delete named::reset(impl_);
       } else
         err = E_XXX;
     }
@@ -168,7 +167,7 @@ namespace notify_change
   }
 
   t_client t_processor::make_client(t_err err, t_user user) noexcept {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->make_client(err, user);
       err = E_XXX;
@@ -176,14 +175,13 @@ namespace notify_change
     return {};
   }
 
-  t_validity t_processor::process(t_err err, t_logic& logic,
-                                  t_n max) noexcept {
-    T_ERR_GUARD(err) {
+  t_void t_processor::process(t_err err, t_logic& logic, t_n max) noexcept {
+    ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
-        return impl_->process(err, logic, max);
-      err = E_XXX;
+        impl_->process(err, logic, max);
+      else
+        err = E_XXX;
     }
-    return INVALID;
   }
 
   t_fd t_processor::get_fd() const noexcept {

@@ -37,8 +37,8 @@ namespace event_dispatcher
   using named::P_cstr;
   using os::fdbased::t_epoll;
   using os::t_epoll_event;
+  using err::r_err;
 
-  using r_err    = named::t_prefix<t_err>::r_;
   using t_events = container::freelist::t_freelist<t_event_info>;
   using r_events = named::t_prefix<t_events>::r_;
 
@@ -68,15 +68,15 @@ namespace event_dispatcher
 
 ///////////////////////////////////////////////////////////////////////////////
 
-    virtual t_errn     add_event(        r_event_info) = 0;
-    virtual t_validity add_event(r_err,  r_event_info) = 0;
-    virtual t_errn     del_event(        r_event_info) = 0;
-    virtual t_validity del_event(r_err,  r_event_info) = 0;
+    virtual t_errn add_event(        r_event_info) = 0;
+    virtual t_void add_event(r_err,  r_event_info) = 0;
+    virtual t_errn del_event(        r_event_info) = 0;
+    virtual t_void del_event(r_err,  r_event_info) = 0;
 
-    virtual t_errn     wait_events(       r_events, r_event_infos) = 0;
-    virtual t_validity wait_events(r_err, r_events, r_event_infos) = 0;
-    virtual t_errn     wait_events(       r_events, r_event_infos, t_usec) = 0;
-    virtual t_validity wait_events(r_err, r_events, r_event_infos, t_usec) = 0;
+    virtual t_errn wait_events(       r_events, r_event_infos) = 0;
+    virtual t_void wait_events(r_err, r_events, r_event_infos) = 0;
+    virtual t_errn wait_events(       r_events, r_event_infos, t_usec) = 0;
+    virtual t_void wait_events(r_err, r_events, r_event_infos, t_usec) = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -117,7 +117,8 @@ namespace event_dispatcher
       auto result = events_.insert(err, {logic, params});
       if (result) {
         result.ptr->id = result.id;
-        if (add_event(err, *result.ptr) == VALID)
+        add_event(err, *result.ptr);
+        if (!err)
           return result.id;
         events_.erase(result.id);
       }
@@ -186,7 +187,7 @@ namespace event_dispatcher
       t_n_ cnt = 0;
       t_quit quit = false;
       do {
-        t_errn errn = wait_events(events_, infos_);
+        auto errn = wait_events(events_, infos_);
         if (errn == VALID) {
           if (!infos_.empty())
             quit = process_events(infos_, logic);
@@ -204,7 +205,8 @@ namespace event_dispatcher
       t_n_ cnt = 0;
       t_quit quit = false;
       do {
-        if (wait_events(err, events_, infos_) == VALID) {
+        wait_events(err, events_, infos_);
+        if (!err) {
           if (!infos_.empty())
             quit = process_events(infos_, logic);
           else
@@ -239,7 +241,8 @@ namespace event_dispatcher
       t_n_ cnt = 0;
       t_quit quit = false;
       do {
-        if (wait_events(err, events_, infos_, usec) == VALID) {
+        wait_events(err, events_, infos_, usec);
+        if (!err) {
           if (!infos_.empty())
             quit = process_events(infos_, logic);
           else
@@ -288,64 +291,61 @@ namespace event_dispatcher
                              data);
     }
 
-    virtual t_validity add_event(r_err err,  r_event_info info) override {
+    virtual t_void add_event(r_err err,  r_event_info info) override {
      t_epoll::t_event_data data;
      data.u32 = get(info.id);
-     return epoll_.add_event(err, info.params.fd,
-                             info.params.type == RD ? EPOLLIN : EPOLLOUT,
-                             data);
+     epoll_.add_event(err, info.params.fd,
+                      info.params.type == RD ? EPOLLIN : EPOLLOUT, data);
     }
 
     virtual t_errn del_event(r_event_info info) override {
       return epoll_.del_event(info.params.fd);
     }
 
-    virtual t_validity del_event(r_err err, r_event_info info) override {
-      return epoll_.del_event(err, info.params.fd);
+    virtual t_void del_event(r_err err, r_event_info info) override {
+      epoll_.del_event(err, info.params.fd);
     }
 
     virtual t_errn wait_events(r_events events, r_event_infos infos) override {
       auto verify = epoll_.wait(epoll_events_, params.max);
       if (verify == VALID) {
-        for (t_n_ cnt = 0; cnt < get(verify.value); ++cnt)
+        for (t_n_ cnt = 0; cnt < get(verify); ++cnt)
           infos.push_back(events.get(t_id{epoll_events_[0].data.u32}));
       }
       return verify.errn;
     }
 
-    virtual t_validity wait_events(r_err err, r_events events,
-                                   r_event_infos infos) override {
+    virtual t_void wait_events(r_err err, r_events events,
+                               r_event_infos infos) override {
       t_n_ n = get(epoll_.wait(err, epoll_events_, params.max));
-      if (n >= 0) {
+      if (!err) {
         for (t_n_ cnt = 0; cnt < n; ++cnt)
           infos.push_back(events.get(t_id{epoll_events_[0].data.u32}));
       }
-      return !err ? VALID : INVALID;
     }
 
     virtual t_errn wait_events(r_events events, r_event_infos infos,
                                t_usec usec) override {
       auto verify = epoll_.wait(epoll_events_, params.max, usec);
       if (verify == VALID) {
-        for (t_n_ cnt = 0; cnt < get(verify.value); ++cnt)
+        for (t_n_ cnt = 0; cnt < get(verify); ++cnt)
           infos.push_back(events.get(t_id{epoll_events_[0].data.u32}));
       }
-      return verify.errn;
+      return get(verify);
     }
 
-    virtual t_validity wait_events(r_err err, r_events events,
-                                   r_event_infos infos, t_usec usec) override {
+    virtual t_void wait_events(r_err err, r_events events,
+                               r_event_infos infos, t_usec usec) override {
       t_n_ n = get(epoll_.wait(err, epoll_events_, params.max, usec));
-      if (n >= 0) {
+      if (!err) {
         for (t_n_ cnt = 0; cnt < n; ++cnt)
           infos.push_back(events.get(t_id{epoll_events_[0].data.u32}));
       }
-      return !err ? VALID : INVALID;
     }
 
   private:
-    t_epoll_event* epoll_events_;
-    t_epoll        epoll_;
+    p_epoll_event epoll_events_;
+    t_epoll       epoll_;
   };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -368,7 +368,7 @@ namespace event_dispatcher
   }
 
   t_dispatcher::t_dispatcher(t_err err, R_params params) {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       if (params.service_name == P_cstr("epoll_service"))
         impl_ = new t_epoll_impl_(err, params);
       else if (params.service_name == P_cstr("select_service")) {
@@ -377,7 +377,7 @@ namespace event_dispatcher
     }
   }
 
-  t_dispatcher::t_dispatcher(t_dispatcher&& dispatcher)
+  t_dispatcher::t_dispatcher(x_dispatcher dispatcher)
     : impl_{named::reset(dispatcher.impl_)} {
   }
 
@@ -411,7 +411,7 @@ namespace event_dispatcher
 
   t_id t_dispatcher::add_event(t_err err, R_event_params params,
                                p_event_logic logic) {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       if (*this == VALID)
         return impl_->add_event(err, params, logic);
       err = E_XXX;
@@ -426,7 +426,7 @@ namespace event_dispatcher
   }
 
   p_event_logic t_dispatcher::del_event(t_err err, t_id id) {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       if (*this == VALID)
         return impl_->del_event(err, id);
       err = E_XXX;
@@ -440,7 +440,7 @@ namespace event_dispatcher
   }
 
   t_void t_dispatcher::clear_events(t_err err) {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       if (*this == VALID)
         impl_->clear_events(err);
       else
@@ -455,7 +455,7 @@ namespace event_dispatcher
   }
 
   P_event_info t_dispatcher::get_event(t_err err, t_id id) const {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       if (*this == VALID)
         return impl_->get_event(err, id);
       err = E_XXX;
@@ -476,7 +476,7 @@ namespace event_dispatcher
   }
 
   t_n t_dispatcher::event_loop(t_err err, p_logic logic) {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       if (*this == VALID)
         return impl_->event_loop(err, logic);
       err = E_XXX;
@@ -491,7 +491,7 @@ namespace event_dispatcher
   }
 
   t_n t_dispatcher::event_loop(t_err err, p_logic logic, t_usec usec) {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       if (*this == VALID)
         return impl_->event_loop(err, logic, usec);
       err = E_XXX;
