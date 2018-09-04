@@ -331,7 +331,7 @@ namespace event_dispatcher
         for (t_n_ cnt = 0; cnt < get(verify); ++cnt)
           infos.push_back(events.get(t_id{epoll_events_[0].data.u32}));
       }
-      return get(verify);
+      return verify.errn;
     }
 
     virtual t_void wait_events(r_err err, r_events events,
@@ -344,8 +344,8 @@ namespace event_dispatcher
     }
 
   private:
-    p_epoll_event epoll_events_;
-    t_epoll       epoll_;
+    t_epoll_event* epoll_events_;
+    t_epoll        epoll_;
   };
 
 ///////////////////////////////////////////////////////////////////////////////
