@@ -24,6 +24,7 @@
 
 ******************************************************************************/
 
+#include "dainty_os_fdbased.h"
 #include "dainty_container_list.h"
 #include "dainty_mt_event_dispatcher.h"
 

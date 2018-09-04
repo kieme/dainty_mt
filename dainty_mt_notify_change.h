@@ -27,7 +27,6 @@
 #ifndef _DAINTY_MT_NOTIFY_CHANGE_H_
 #define _DAINTY_MT_NOTIFY_CHANGE_H_
 
-#include "dainty_os_fdbased.h"
 #include "dainty_container_any.h"
 #include "dainty_mt_err.h"
 
@@ -37,6 +36,7 @@ namespace mt
 {
 namespace notify_change
 {
+  using named::t_fd;
   using named::t_n;
   using named::t_void;
   using named::t_validity;
@@ -46,7 +46,6 @@ namespace notify_change
   using named::INVALID;
 
   using container::any::t_any;
-  using os::fdbased::t_fd;
   using err::t_err;
 
   enum  t_user_tag_ { };

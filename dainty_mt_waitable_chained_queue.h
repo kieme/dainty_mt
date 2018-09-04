@@ -27,7 +27,6 @@
 #ifndef _DAINTY_MT_WAITABLE_CHAINED_QUEUE_H_
 #define _DAINTY_MT_WAITABLE_CHAINED_QUEUE_H_
 
-#include "dainty_os_fdbased.h"
 #include "dainty_container_any.h"
 #include "dainty_container_chained_queue.h"
 #include "dainty_mt_err.h"
@@ -38,7 +37,7 @@ namespace mt
 {
 namespace waitable_chained_queue
 {
-  using os::fdbased::t_fd;
+  using named::t_fd;
   using named::t_n;
   using named::t_void;
   using named::t_validity;

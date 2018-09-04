@@ -28,7 +28,6 @@
 #define _DAINTY_MT_EVENT_DISPATCHER_H_
 
 #include <vector>
-#include "dainty_os_fdbased.h"
 #include "dainty_container_freelist.h"
 #include "dainty_named_string.h"
 #include "dainty_mt_err.h"
@@ -41,6 +40,7 @@ namespace event_dispatcher
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+  using named::t_fd;
   using named::t_void;
   using named::t_bool;
   using named::t_n;
@@ -53,8 +53,7 @@ namespace event_dispatcher
   using named::t_prefix;
   using named::VALID;
   using named::INVALID;
-  using os::t_fd;
-  using os::BAD_FD;
+  using named::BAD_FD;
   using err::t_err;
 
   using container::freelist::t_id;

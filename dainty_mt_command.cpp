@@ -24,6 +24,7 @@
 
 ******************************************************************************/
 
+#include "dainty_os_fdbased.h"
 #include "dainty_os_threading.h"
 #include "dainty_mt_command.h"
 

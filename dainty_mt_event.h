@@ -29,7 +29,6 @@
 
 #include "dainty_named.h"
 #include "dainty_oops.h"
-#include "dainty_os_fdbased.h"
 #include "dainty_mt_err.h"
 
 namespace dainty
@@ -38,7 +37,7 @@ namespace mt
 {
 namespace event
 {
-  using os::fdbased::t_fd;
+  using named::t_fd;
   using named::t_n;
   using named::t_void;
   using named::t_validity;
