@@ -136,7 +136,7 @@ namespace condvar_event
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  t_eern t_client::post(t_cnt cnt) noexcept {
+  t_errn t_client::post(t_cnt cnt) noexcept {
     if (impl_)
       return impl_->post(user_, cnt);
     return t_errn{-1};
@@ -147,7 +147,7 @@ namespace condvar_event
       if (impl_ && *impl_ == VALID)
         impl_->post(err, user_, cnt);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -160,7 +160,7 @@ namespace condvar_event
         if (err)
           delete named::reset(impl_);
       } else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -174,7 +174,7 @@ namespace condvar_event
     ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->get_cnt(err);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return t_cnt{0};
   }
@@ -189,7 +189,7 @@ namespace condvar_event
     ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->make_client(err, user);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return {};
   }
@@ -199,9 +199,8 @@ namespace condvar_event
       if (impl_ && *impl_ == VALID)
         impl_->process(err, logic, max);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
-    return INVALID;
   }
 
   t_void t_processor::reset_then_process(t_err err, r_logic logic,
@@ -210,7 +209,7 @@ namespace condvar_event
       if (impl_ && *impl_ == VALID)
         impl_->reset_then_process(err, logic, max);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 

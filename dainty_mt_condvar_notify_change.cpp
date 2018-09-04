@@ -130,7 +130,7 @@ namespace condvar_notify_change
       if (impl_ && *impl_ == VALID)
         impl_->post(err, user_, std::move(any));
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -143,7 +143,7 @@ namespace condvar_notify_change
         if (err)
           delete named::reset(impl_);
       } else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -162,7 +162,7 @@ namespace condvar_notify_change
     ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->make_client(err, user);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return {};
   }
@@ -172,7 +172,7 @@ namespace condvar_notify_change
       if (impl_ && *impl_ == VALID)
         impl_->process(err, logic, max);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 

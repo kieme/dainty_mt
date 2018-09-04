@@ -41,6 +41,7 @@ namespace thread
   using named::t_bool;
   using named::P_cstr;
   using named::t_validity;
+  using named::t_errn;
   using named::t_prefix;
   using named::VALID;
   using named::INVALID;
@@ -49,9 +50,9 @@ namespace thread
 ///////////////////////////////////////////////////////////////////////////////
 
   class t_thread;
-  using r_thread = t_profix<t_thread>::r_;
-  using x_thread = t_profix<t_thread>::x_;
-  using R_thread = t_profix<t_thread>::R_;
+  using r_thread = t_prefix<t_thread>::r_;
+  using x_thread = t_prefix<t_thread>::x_;
+  using R_thread = t_prefix<t_thread>::R_;
 
   class t_thread {
   public:

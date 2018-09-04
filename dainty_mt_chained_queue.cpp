@@ -44,7 +44,7 @@ namespace chained_queue
   class t_impl_ {
   public:
     using t_chain = t_queue::t_chain;
-    using t_logic = t_processor::t_logic;
+    using r_logic = t_processor::r_logic;
 
     t_impl_(r_err err, t_n max) noexcept
       : queue_{max}, eventfd_(err, t_n{0}), lock1_{err}, lock2_{err} {
@@ -138,7 +138,7 @@ namespace chained_queue
           eventfd_.write(err, value);
         }
       } else
-        err = E_XXX;
+        err = err::E_XXX;
     }
 
     t_fd get_fd() const noexcept {
@@ -174,7 +174,7 @@ namespace chained_queue
     ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->acquire(err, user_, cnt);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return {};
   }
@@ -182,7 +182,7 @@ namespace chained_queue
   t_errn t_client::insert(t_chain chain) noexcept {
     if (impl_)
       return impl_->insert(user_, chain);
-    return INVALID;
+    return t_errn{-1};
   }
 
   t_void t_client::insert(t_err err, t_chain chain) noexcept {
@@ -190,7 +190,7 @@ namespace chained_queue
       if (impl_ && *impl_ == VALID)
         impl_->insert(err, user_, chain);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -203,7 +203,7 @@ namespace chained_queue
         if (err)
           delete named::reset(impl_);
       } else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -223,7 +223,7 @@ namespace chained_queue
     ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->make_client(err, user);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return {};
   }
@@ -233,7 +233,7 @@ namespace chained_queue
       if (impl_ && *impl_ == VALID)
         impl_->process(err, logic, max);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -242,7 +242,7 @@ namespace chained_queue
       if (impl_ && *impl_ == VALID)
         impl_->process_available(err, logic);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 

@@ -103,7 +103,7 @@ namespace event
       if (impl_ && *impl_ == VALID)
         impl_->post(err, user_, cnt);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -116,7 +116,7 @@ namespace event
         if (err)
           delete named::reset(impl_);
       } else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -136,7 +136,7 @@ namespace event
     ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->make_client(err, user);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return {};
   }
@@ -146,7 +146,7 @@ namespace event
       if (impl_ && *impl_ == VALID)
         impl_->process(err, logic, max);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 

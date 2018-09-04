@@ -94,7 +94,7 @@ namespace event_dispatcher
       P_event_info info = events_.get(id);
       if (info)
         return info;
-      err = E_XXX;
+      err = err::E_XXX;
       return nullptr;
     }
 
@@ -373,7 +373,7 @@ namespace event_dispatcher
         impl_ = new t_epoll_impl_(err, params);
       else if (params.service_name == P_cstr("select_service")) {
       } else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -414,7 +414,7 @@ namespace event_dispatcher
     ERR_GUARD(err) {
       if (*this == VALID)
         return impl_->add_event(err, params, logic);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return t_id{0};
   }
@@ -429,7 +429,7 @@ namespace event_dispatcher
     ERR_GUARD(err) {
       if (*this == VALID)
         return impl_->del_event(err, id);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return nullptr;
   }
@@ -444,7 +444,7 @@ namespace event_dispatcher
       if (*this == VALID)
         impl_->clear_events(err);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -458,7 +458,7 @@ namespace event_dispatcher
     ERR_GUARD(err) {
       if (*this == VALID)
         return impl_->get_event(err, id);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return nullptr;
   }
@@ -479,7 +479,7 @@ namespace event_dispatcher
     ERR_GUARD(err) {
       if (*this == VALID)
         return impl_->event_loop(err, logic);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return t_n{0};
   }
@@ -494,7 +494,7 @@ namespace event_dispatcher
     ERR_GUARD(err) {
       if (*this == VALID)
         return impl_->event_loop(err, logic, usec);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return t_n{0};
   }

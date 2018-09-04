@@ -41,7 +41,7 @@ namespace command
 
   class t_impl_ {
   public:
-    using t_logic = t_processor::t_logic;
+    using r_logic = t_processor::r_logic;
 
     t_impl_(r_err err) noexcept
       : cmdlock_(err), condlock_(err), cond_(err), eventfd_(err, t_n{0}) {
@@ -73,7 +73,7 @@ namespace command
               }
             } else {
               cmd_ = nullptr;
-              err = E_XXX;
+              err = err::E_XXX;
             }
           }
         %>
@@ -99,7 +99,6 @@ namespace command
           }
         %>
       %>
-      return !err ? VALID : INVALID;
     }
 
     t_errn async_request(t_user user, p_command cmd) noexcept {
@@ -124,7 +123,7 @@ namespace command
           %>
         }
       %>
-      return validity;
+      return errn;
     }
 
     t_void async_request(r_err err, t_user user, p_command cmd) noexcept {
@@ -146,7 +145,6 @@ namespace command
           }
         %>
       %>
-      return !err ? VALID : INVALID;
     }
 
     t_fd get_fd() const noexcept {
@@ -168,10 +166,10 @@ namespace command
     t_mutex_lock condlock_;
     t_cond_var   cond_;
     t_eventfd    eventfd_;
-    p_command    cmd_     = nullptr;
-    t_user       user_    = t_user{0L};
-    t_bool       async_   = false;
-    t_bool       wait_    = false;
+    p_command    cmd_   = nullptr;
+    t_user       user_  = t_user{0L};
+    t_bool       async_ = false;
+    t_bool       wait_  = false;
   };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -181,7 +179,7 @@ namespace command
       if (impl_ && *impl_ == VALID)
         impl_->request(err, user_, cmd);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -196,7 +194,7 @@ namespace command
       if (impl_ && *impl_ == VALID)
         impl_->async_request(err, user_, cmd);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -209,7 +207,7 @@ namespace command
         if (err)
           delete named::reset(impl_);
       } else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -229,7 +227,7 @@ namespace command
     ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->make_client(err, user);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return {};
   }
@@ -239,7 +237,7 @@ namespace command
       if (impl_ && *impl_ == VALID)
         impl_->process(err, logic, max);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 

@@ -113,7 +113,7 @@ namespace condvar_command
           %>
         }
       %>
-      return validity;
+      return errn;
     }
 
     t_void async_request(r_err err, t_user user, p_command cmd) noexcept {
@@ -159,7 +159,7 @@ namespace condvar_command
       if (impl_ && *impl_ == VALID)
         impl_->request(err, user_, cmd);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -174,7 +174,7 @@ namespace condvar_command
       if (impl_ && *impl_ == VALID)
         impl_->async_request(err, user_, cmd);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -187,7 +187,7 @@ namespace condvar_command
         if (err)
           delete named::reset(impl_);
       } else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -206,7 +206,7 @@ namespace condvar_command
     ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->make_client(err, user);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return {};
   }
@@ -216,7 +216,7 @@ namespace condvar_command
       if (impl_ && *impl_ == VALID)
         impl_->process(err, logic, max);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 

@@ -43,8 +43,8 @@ namespace chained_queue
   using named::t_validity;
   using named::VALID;
   using named::INVALID;
-  using named:t_errn;
-  using named:t_prefix;
+  using named::t_errn;
+  using named::t_prefix;
   using os::fdbased::t_fd;
   using err::t_err;
 

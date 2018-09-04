@@ -75,7 +75,7 @@ namespace condvar_timed_event
         %>
         if (!err)
           logic.async_process(cnt);
-        else if (err.id() == os::E_TIMEOUT) {
+        else if (err.id() == os::err::E_TIMEOUT) {
           err.clear();
           logic.timeout_process(time);
         }
@@ -97,7 +97,7 @@ namespace condvar_timed_event
         %>
         if (!err)
           logic.async_process(cnt);
-        else if (err.id() == os::E_TIMEOUT) {
+        else if (err.id() == os::err::E_TIMEOUT) {
           err.clear();
           logic.timeout_process(time);
         }
@@ -154,24 +154,24 @@ namespace condvar_timed_event
   }
 
   t_void t_client::post(t_err err, t_cnt cnt) noexcept {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         impl_->post(err, user_, cnt);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
 ///////////////////////////////////////////////////////////////////////////////
 
   t_processor::t_processor(t_err err) noexcept {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       impl_ = new t_impl_(err);
       if (impl_) {
         if (err)
-          delete name::reset(impl_);
+          delete named::reset(impl_);
       } else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -182,10 +182,10 @@ namespace condvar_timed_event
   }
 
   t_cnt t_processor::get_cnt(t_err err) {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->get_cnt(err);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return t_cnt{0};
   }
@@ -197,31 +197,31 @@ namespace condvar_timed_event
   }
 
   t_client t_processor::make_client(t_err err, t_user user) noexcept {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->make_client(err, user);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return {};
   }
 
   t_void t_processor::process(t_err err, r_logic logic, R_time time,
                               t_n max) noexcept {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         impl_->process(err, logic, time, max);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
   t_void t_processor::reset_then_process(t_err err, r_logic logic,
                                          R_time time, t_n max) noexcept {
-    T_ERR_GUARD(err) {
+    ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         impl_->reset_then_process(err, logic, time, max);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 

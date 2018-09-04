@@ -60,7 +60,7 @@ namespace event
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  class t_client
+  class t_client;
   using r_client = t_prefix<t_client>::r_;
   using x_client = t_prefix<t_client>::x_;
   using R_client = t_prefix<t_client>::R_;
@@ -90,7 +90,7 @@ namespace event
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  class t_processor
+  class t_processor;
   using r_processor = t_prefix<t_processor>::r_;
   using x_processor = t_prefix<t_processor>::x_;
   using R_processor = t_prefix<t_processor>::R_;
@@ -131,7 +131,7 @@ namespace event
 ///////////////////////////////////////////////////////////////////////////////
 
   inline
-  t_client::t_client(r_client client) noexcept
+  t_client::t_client(x_client client) noexcept
     : impl_(named::reset(client.impl_)),
       user_(named::reset(client.user_, 0L)) {
   }

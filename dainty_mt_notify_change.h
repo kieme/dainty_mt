@@ -64,7 +64,7 @@ namespace notify_change
 
   class t_client {
   public:
-    t_client(x_client&&) noexcept;
+    t_client(x_client) noexcept;
 
     r_client operator=(R_client) = delete;
     r_client operator=(x_client) = delete;
@@ -110,8 +110,8 @@ namespace notify_change
     ~t_processor();
 
     t_processor(R_processor)           = delete;
-    p_processor operator=(x_processor) = delete;
-    p_processor operator=(R_processor) = delete;
+    r_processor operator=(x_processor) = delete;
+    r_processor operator=(R_processor) = delete;
 
     operator t_validity () const noexcept;
 
@@ -143,8 +143,7 @@ namespace notify_change
 
   inline
   t_processor::t_processor(x_processor processor) noexcept
-      : impl_(processor.impl_) {
-    processor.impl_ = nullptr;
+      : impl_(named::reset(processor.impl_)) {
   }
 
   inline

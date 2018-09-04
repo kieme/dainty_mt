@@ -59,7 +59,7 @@ namespace detached_thread
           ready_(false) {
       }
     };
-    p_data_ = t_prefix<t_data_>::p_;
+    using p_data_ = t_prefix<t_data_>::p_;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -74,7 +74,7 @@ namespace detached_thread
       t_os_thread::set_name(err, t_os_thread::get_self(), data->name_);
       <% auto scope = data->lock_.make_locked_scope(err);
         logic->prepare(err);
-        data->ready_ = !err ? VALID : INVALID;
+        data->ready_ = !err;
       %>
 
       if (!err) {
@@ -102,7 +102,7 @@ namespace detached_thread
           (::pthread_attr_setguardsize   (&attr, (4 * 1024)))             ||
           (::pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED)) ||
           (::pthread_attr_setschedpolicy (&attr, SCHED_OTHER)))
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 

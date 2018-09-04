@@ -43,7 +43,7 @@ namespace condvar_chained_queue
   class t_impl_ {
   public:
     using t_chain = t_queue::t_chain;
-    using t_logic = t_processor::t_logic;
+    using r_logic = t_processor::r_logic;
 
     t_impl_(r_err err, t_n max) noexcept :
       queue_{max}, cond_{err}, lock1_{err}, lock2_{err} {
@@ -94,9 +94,9 @@ namespace condvar_chained_queue
         t_bool send = false;
         <% auto scope = lock2_.make_locked_scope();
           if (scope == VALID) {
-            errn = 0;
             send = queue_.is_empty();
             queue_.insert(chain);
+            set(errn) = 0;
           }
         %>
         if (send && errn == VALID)
@@ -115,7 +115,7 @@ namespace condvar_chained_queue
         if (send)
           cond_.signal(err);
       } else
-        err = E_XXX;
+        err = err::E_XXX;
     }
 
     t_client make_client(t_user user) noexcept {
@@ -147,7 +147,7 @@ namespace condvar_chained_queue
     ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->acquire(err, user_, cnt);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return {};
   }
@@ -163,9 +163,8 @@ namespace condvar_chained_queue
       if (impl_ && *impl_ == VALID)
         impl_->insert(err, user_, chain);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
-    return INVALID;
   }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -177,7 +176,7 @@ namespace condvar_chained_queue
         if (err)
           delete named::reset(impl_);
       } else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
@@ -197,7 +196,7 @@ namespace condvar_chained_queue
     ERR_GUARD(err) {
       if (impl_ && *impl_ == VALID)
         return impl_->make_client(err, user);
-      err = E_XXX;
+      err = err::E_XXX;
     }
     return {};
   }
@@ -207,7 +206,7 @@ namespace condvar_chained_queue
       if (impl_ && *impl_ == VALID)
         impl_->process(err, logic, max);
       else
-        err = E_XXX;
+        err = err::E_XXX;
     }
   }
 
