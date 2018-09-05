@@ -77,7 +77,7 @@ namespace chained_queue
       }
     }
 
-    t_void process_available(r_err err, r_logic logic) noexcept {
+    t_void process_available(r_err err, r_logic logic) noexcept { //XXX - must read fd
       t_chain chain;
       <% auto scope = lock2_.make_locked_scope(err);
         chain = queue_.remove(err);
