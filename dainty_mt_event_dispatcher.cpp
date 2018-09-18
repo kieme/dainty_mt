@@ -178,6 +178,7 @@ namespace event_dispatcher
               return true;
           }
         }
+        return logic->notify_events_processed();
       }
       return false;
     }
