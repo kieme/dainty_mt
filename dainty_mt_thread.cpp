@@ -139,7 +139,7 @@ namespace thread
   }
 
   t_void t_thread::join(t_err err, p_void& arg) noexcept {
-    thread_.join(err);
+    thread_.join(err, arg);
   }
 
 ///////////////////////////////////////////////////////////////////////////////
